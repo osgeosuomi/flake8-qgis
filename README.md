@@ -168,20 +168,20 @@ from osgeo import gdal
 
 ## Development
 
+This project uses [uv](https://docs.astral.sh/uv/getting-started/installation/)
+to manage python packages. Make sure to have it installed first.
+
 Install development dependencies
 ```
-python -m venv .venv
-# activate the venv
-python -m pip install -U pip
-pip install pip-tools
-pip-sync requirements.txt requirements-dev.txt requirements-lint.txt
+# Activate the virtual environment
+$ source .venv/bin/activate
+# Install dependencies
+$ uv sync
+# Install pre-commit hooks
+$ pre-commit install
 ```
 
 ### Updating dependencies
-Edit `.in` dependency files then run
 
-```
-uv pip compile --universal --python 3.9 setup.cfg -o requirements.txt
-uv pip compile --universal --python 3.9 requirements-dev.in -o requirements-dev.txt
-uv pip compile --universal --python 3.9 requirements-lint.in -o requirements-lint.txt
-```
+1. `uv pip compile --universal pyproject.toml -o requirements.txt --upgrade`
+2. `uv pip compile --universal -o requirements-dev.txt --group development --upgrade`
