@@ -1,0 +1,90 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flake8_qgis"
+version = "1.1.0"
+authors = [
+    { name = "Gispo Ltd.", email = "info@gispo.fi" },
+    { name = "OSGeo Suomi", email = "info@osgeo.fi" },
+]
+maintainers = [{ name = "OSGeo Suomi", email = "info@osgeo.fi" }]
+
+description = "Flake8 plugin for QGIS python plugins."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["flake8", "qgis", "QGIS", "PyQGIS"]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+    "Framework :: Flake8",
+]
+dependencies = [
+    "flake8>=7.2",
+]
+
+[project.entry-points."flake8.extension"]
+QGS = "flake8_qgis:Plugin"
+
+[tool.setuptools]
+packages = ["flake8_qgis"]
+
+[tool.setuptools.package-data]
+"flake8_qgis" = ["py.typed"]
+
+[tool.pytest.ini_options]
+doctest_encoding = "utf-8"
+
+[tool.pydocstyle]
+match_dir = "flake8_qgis"
+ignore = ["D104", "D105", "D107", "D301", "D413", "D203", "D212", "D100"]
+
+[tool.flake8]
+# Configuration for flake8-pyproject
+max-line-length = 88
+extend-ignore = [
+    "E203",   # whitespace before ':'
+    "ANN101", # Missing type annotation for self in method
+    "PT004",  # fixture '{name}' does not return anything, add leading underscore
+]
+per-file-ignores = [
+    "tests/*:ANN001,ANN201,N802,ASS001",
+]
+
+[tool.isort]
+import_heading_stdlib = "Core Library modules"
+import_heading_thirdparty = "Third party modules"
+import_heading_firstparty = "First party modules"
+import_heading_localfolder = "Local modules"
+include_trailing_comma = true
+indent = "    "
+known_third_party = ["click", "pytest", "setuptools"]
+length_sort = 0
+line_length = 80
+multi_line_output = 3
+
+[tool.mypy]
+ignore_missing_imports = true
+check_untyped_defs = true
+disallow_untyped_defs = false
+warn_unused_ignores = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_configs = true
+disallow_untyped_calls = false
+disallow_incomplete_defs = true
+follow_imports = "skip"
+mypy_path = "typeshed/pyi:typeshed/imports"
