@@ -1,33 +1,22 @@
-# Core Library modules
 import ast
+import importlib.metadata as importlib_metadata
 import re
-import sys
 from _ast import FunctionDef, Import
+from collections.abc import Generator
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Generator,
-    List,
     Optional,
-    Tuple,
-    Type,
 )
 
 if TYPE_CHECKING:
-    FlakeError = Tuple[int, int, str]
+    FlakeError = tuple[int, int, str]
 
 
 CLASS_FACTORY = "classFactory"
 
 QGIS_INTERFACE = "QgisInterface"
-
-if sys.version_info < (3, 8):
-    # Third party modules
-    import importlib_metadata
-else:
-    # Core Library modules
-    import importlib.metadata as importlib_metadata
 
 FROM_IMPORT_USE_INSTEAD_OF = (
     "{code} Use 'from {correct_module} import {members}' "
@@ -40,13 +29,15 @@ QGS105 = (
 )
 QGS106 = "QGS106 Use 'from osgeo import {members}' instead of 'import {members}'"
 
+MINIMUM_REQUIRED_MODULES = 2
+
 
 def _test_qgis_module(module: Optional[str]) -> Optional[str]:
     if module is None:
         return None
 
     modules = module.split(".")
-    if len(modules) < 2:
+    if len(modules) < MINIMUM_REQUIRED_MODULES:
         return None
 
     if (
@@ -76,7 +67,7 @@ def _test_module_at_import_from(
     error_code: str,
     node: ast.ImportFrom,
     tester: Callable[[Optional[str]], Optional[str]],
-) -> List["FlakeError"]:
+) -> list["FlakeError"]:
     fixed_module_name = tester(node.module)
     if fixed_module_name:
         message = FROM_IMPORT_USE_INSTEAD_OF.format(
@@ -93,8 +84,8 @@ def _test_module_at_import_from(
 
 def _test_module_at_import(
     error_code: str, node: ast.Import, tester: Callable[[Optional[str]], Optional[str]]
-) -> List["FlakeError"]:
-    errors: List["FlakeError"] = []
+) -> list["FlakeError"]:
+    errors: list[FlakeError] = []
     for alias in node.names:
         fixed_module_name = tester(alias.name)
         if fixed_module_name:
@@ -106,8 +97,8 @@ def _test_module_at_import(
     return errors
 
 
-def _get_qgs105(node: ast.FunctionDef) -> List["FlakeError"]:
-    errors: List["FlakeError"] = []
+def _get_qgs105(node: ast.FunctionDef) -> list["FlakeError"]:
+    errors: list[FlakeError] = []
     if node.name == CLASS_FACTORY:
         return errors
     for arg in node.args.args:
@@ -124,8 +115,8 @@ def _get_qgs105(node: ast.FunctionDef) -> List["FlakeError"]:
     return errors
 
 
-def _get_qgs106(node: ast.Import) -> List["FlakeError"]:
-    errors: List["FlakeError"] = []
+def _get_qgs106(node: ast.Import) -> list["FlakeError"]:
+    errors: list[FlakeError] = []
     for alias in node.names:
         if alias.name in ("gdal", "ogr"):
             errors.append(
@@ -140,20 +131,20 @@ def _get_qgs106(node: ast.Import) -> List["FlakeError"]:
 
 class Visitor(ast.NodeVisitor):
     def __init__(self) -> None:
-        self.errors: List["FlakeError"] = []
+        self.errors: list[FlakeError] = []
 
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # noqa: N802
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         self.errors += _test_module_at_import_from("QGS101", node, _test_qgis_module)
         self.errors += _test_module_at_import_from("QGS103", node, _test_pyqt_module)
         self.generic_visit(node)
 
-    def visit_Import(self, node: Import) -> None:  # noqa: N802
+    def visit_Import(self, node: Import) -> None:
         self.errors += _test_module_at_import("QGS102", node, _test_qgis_module)
         self.errors += _test_module_at_import("QGS104", node, _test_pyqt_module)
         self.errors += _get_qgs106(node)
         self.generic_visit(node)
 
-    def visit_FunctionDef(self, node: FunctionDef) -> None:  # noqa: N802
+    def visit_FunctionDef(self, node: FunctionDef) -> None:
         self.errors += _get_qgs105(node)
         self.generic_visit(node)
 
@@ -165,13 +156,13 @@ class Plugin:
     def __init__(self, tree: ast.AST) -> None:
         self._tree = tree
 
-    def run(self) -> Generator[Tuple[int, int, str, Type[Any]], None, None]:
+    def run(self) -> Generator[tuple[int, int, str, type[Any]], None, None]:
         visitor = Visitor()
 
         # Add parent
         for node in ast.walk(self._tree):
             for child in ast.iter_child_nodes(node):
-                child.parent = node  # type: ignore
+                child.parent = node  # type: ignore[attr-defined]
         visitor.visit(self._tree)
 
         for line, col, msg in visitor.errors:

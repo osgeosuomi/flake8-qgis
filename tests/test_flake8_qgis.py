@@ -1,16 +1,11 @@
-# Core Library
-# Core Library modules
 import ast
-from typing import Set
 
-# First party modules
-# First party
 from flake8_qgis import Plugin
 
 """Tests for `flake8_qgis` package."""
 
 
-def _results(s: str) -> Set[str]:
+def _results(s: str) -> set[str]:
     tree = ast.parse(s)
     plugin = Plugin(tree)
     return {f"{line}:{col} {msg}" for line, col, msg, _ in plugin.run()}
@@ -158,7 +153,7 @@ class SomeClass:
         """
     )
     assert len(ret) == 1
-    assert list(ret)[0].endswith(
+    assert next(iter(ret)).endswith(
         "QGS105 Do not pass iface (QgisInterface) as an argument, instead import "
         "it: 'from qgis.utils import iface'"
     )
