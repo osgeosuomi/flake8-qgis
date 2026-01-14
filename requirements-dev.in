@@ -1,8 +1,0 @@
--e file:.
-
-pip-tools
-pre-commit
-pytest
-pytest-cov
-pytest-timeout
-wheel
