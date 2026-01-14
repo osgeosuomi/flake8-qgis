@@ -1,8 +1,8 @@
 # flake8-qgis
 [![PyPI version](https://badge.fury.io/py/flake8-qgis.svg)](https://badge.fury.io/py/flake8-qgis)
 [![Downloads](https://img.shields.io/pypi/dm/flake8-qgis.svg)](https://pypistats.org/packages/flake8-qgis)
-![CI](https://github.com/GispoCoding/flake8-qgis/workflows/CI/badge.svg)
-[![Code on Github](https://img.shields.io/badge/Code-GitHub-brightgreen)](https://github.com/GispoCoding/flake8-qgis)
+![CI](https://github.com/osgeosuomi/flake8-qgis/workflows/CI/badge.svg)
+[![Code on Github](https://img.shields.io/badge/Code-GitHub-brightgreen)](https://github.com/osgeosuomi/flake8-qgis)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
@@ -124,7 +124,7 @@ import qgis.PyQt.QtCore.pyqtSignal as pyqtSignal
 Avoid passing QgisInterface as an argument
 
 #### Why is this bad?
-It is much easier to import QgisInterface, and it's easier to [mock](https://github.com/GispoCoding/pytest-qgis#hooks) it as well when writing tests. This approach is not however documented properly, so the API might change at some point to exclude this.
+It is much easier to import QgisInterface, and it's easier to [mock](https://github.com/osgeosuomi/pytest-qgis#hooks) it as well when writing tests. This approach is not however documented properly, so the API might change at some point to exclude this.
 
 This rule can be excluded safely since this is only a matter of preference. Passing iface as an argument is the documented way of getting QgisInterface in plugins. However, it requires writing more code.
 
