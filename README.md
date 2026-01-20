@@ -174,7 +174,6 @@ Install development dependencies
 ```
 # Activate the virtual environment
 $ source .venv/bin/activate
-# Install dependencies
 $ uv sync
 # Install pre-commit hooks
 $ pre-commit install
@@ -182,5 +181,8 @@ $ pre-commit install
 
 ### Updating dependencies
 
-1. `uv pip compile --universal pyproject.toml -o requirements.txt --upgrade`
-2. `uv pip compile --universal -o requirements-dev.txt --group development --upgrade`
+`uv lock --upgrade`
+
+## Contributing
+
+Contributions are very welcome.
