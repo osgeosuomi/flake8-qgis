@@ -172,3 +172,159 @@ def test_QGS106():
         "1:0 QGS106 Use 'from osgeo import gdal' instead of 'import gdal'",
         "1:0 QGS106 Use 'from osgeo import ogr' instead of 'import ogr'",
     }
+
+
+def test_QGS107():
+    ret = _results("dialog.exec_()")
+    assert ret == {"1:0 QGS107 Use 'exec' instead of 'exec_'"}
+    ret = _results("def exec_(): pass")
+    assert ret == {"1:0 QGS107 Use 'exec' instead of 'exec_'"}
+
+
+def test_QGS401():
+    ret = _results("qApp.processEvents()")
+    assert ret == {
+        "1:0 QGS401 Use 'QApplication.instance()' or 'QgsApplication.instance()' "
+        "instead of 'qApp'"
+    }
+
+
+def test_QGS402():
+    ret = _results("QVariant.Type.UInt")
+    assert ret == {
+        "1:0 QGS402 Use 'QMetaType.UInt' or 'QMetaType.Type.UInt' instead of "
+        "'QVariant.Type.UInt'. WARNING: after this, the plugin may not be compatible "
+        "with QGIS 3."
+    }
+
+    ret = _results("QVariant.Int")
+    assert ret == {
+        "1:0 QGS402 Use 'QMetaType.Int' or 'QMetaType.Type.Int' instead of "
+        "'QVariant.Int'. WARNING: after this, the plugin may not be compatible with "
+        "QGIS 3."
+    }
+
+    ret = _results("QVariant.Invalid")
+    assert ret == {
+        "1:0 QGS402 Use 'QMetaType.UnknownType' or 'QMetaType.Type.UnknownType' "
+        "instead of 'QVariant.Invalid'. WARNING: after this, the plugin may not be "
+        "compatible with QGIS 3."
+    }
+
+
+def test_QGS403():
+    ret = _results("value = QPainter.HighQualityAntialiasing")
+    assert ret == {
+        "1:8 QGS403 Enum has been changed in Qt6. Use "
+        "'QPainter.RenderHint.Antialiasing' instead of "
+        "'QPainter.HighQualityAntialiasing'."
+    }
+
+    ret = _results("role = Qt.MouseButton.MidButton")
+    assert ret == {
+        "1:7 QGS403 Enum has been changed in Qt6. Use 'Qt.MouseButton.MiddleButton' "
+        "instead of 'Qt.MouseButton.MidButton'."
+    }
+
+
+def test_QGS404():
+    expected_error = {
+        "1:0 QGS404 QFontMetrics.width() has been removed in Qt6. "
+        "Use QFontMetrics.horizontalAdvance() or "
+        "QFontMetrics.boundingRect().width() instead."
+    }
+
+    ret = _results("QFontMetrics.width()")
+    assert ret == expected_error
+
+    ret = _results("font_metrics.width()")
+    assert ret == expected_error
+
+    assert _results("self.width()") == set()
+
+
+def test_QGS405():
+    ret = _results("combo_box.activated[str].connect(foo)")
+    assert ret == {
+        "1:0 QGS405 activated[str] has been removed in Qt6, use textActivated instead"
+    }
+
+
+def test_QGS406():
+    ret = _results("from qgis.PyQt.QtCore import QRegExp")
+    assert ret == {
+        "1:0 QGS406 QRegExp is removed in Qt6, use QRegularExpression instead"
+    }
+    ret = _results("import QRegExp")
+    assert ret == {
+        "1:0 QGS406 QRegExp is removed in Qt6, use QRegularExpression instead"
+    }
+    ret = _results("re = QRegExp('foo')")
+    assert ret == {
+        "1:5 QGS406 QRegExp is removed in Qt6, use QRegularExpression instead"
+    }
+
+
+def test_QGS407():
+    ret = _results("QApplication.desktop()")
+    assert ret == {
+        "1:0 QGS407 QDesktopWidget is removed in Qt6. Replace with alternative "
+        "approach instead."
+    }
+
+
+def test_QGS408():
+    ret = _results("import resources_rc")
+    assert ret == {
+        "1:0 QGS408 support for compiled resources is removed in Qt6. Directly load "
+        "icon resources. by file path and load UI fields using uic.loadUiType by file "
+        "path instead."
+    }
+
+    ret = _results("from resources_rc import item")
+    assert ret == {
+        "1:0 QGS408 support for compiled resources is removed in Qt6. Directly load "
+        "icon resources. by file path and load UI fields using uic.loadUiType by file "
+        "path instead."
+    }
+
+
+def test_QGS409():
+    ret = _results("menu.addAction(foo, bar, baz)")
+    assert ret == set()
+
+    ret = _results("menu.addAction(foo, bar, baz, qux)")
+    assert ret == {
+        "1:0 QGS409 fragile call to addAction. Use my_action = QAction(...), "
+        "obj.addAction(my_action) instead."
+    }
+
+
+def test_QGS410():
+    ret = _results("val = QVariant()")
+    assert ret == {
+        "1:6 QGS410 Invalid conversion of QVariant() to NULL. Use from qgis.core "
+        "import NULL instead."
+    }
+
+    ret = _results("val = QVariant(QVariant.Int)")
+    assert ret == {
+        "1:6 QGS410 Invalid conversion of QVariant(QVariant) to NULL. Use from "
+        "qgis.core import NULL instead."
+    }
+
+
+def test_QGS411():
+    ret = _results("val = QDateTime(0,0,0,0,0,0,0,0)")
+    assert ret == {
+        "1:6 QGS411 QDateTime(yyyy, mm, dd, hh, MM, ss, ms, ts) doesn't work anymore "
+        "in Qt6, port to more reliable QDateTime(QDate, QTime, ts) form."
+    }
+
+
+def test_QGS412():
+    ret = _results("val = QDateTime(QDate(2023, 1, 1))")
+    assert ret == {
+        "1:6 QGS412 QDateTime(QDate(...)) doesn't work anymore in Qt6, "
+        "port to more reliable QDatetime(QDate, QTime(0,0,0)) form."
+    }
