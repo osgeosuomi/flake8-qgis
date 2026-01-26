@@ -2,6 +2,7 @@ import ast
 import importlib.metadata as importlib_metadata
 import re
 from _ast import FunctionDef, Import
+from ast import Call
 from collections.abc import Generator
 from typing import (
     TYPE_CHECKING,
@@ -13,11 +14,10 @@ from typing import (
 if TYPE_CHECKING:
     FlakeError = tuple[int, int, str]
 
-
-CLASS_FACTORY = "classFactory"
-
-QGIS_INTERFACE = "QgisInterface"
-
+"""
+Rule descriptions
+===================
+"""
 FROM_IMPORT_USE_INSTEAD_OF = (
     "{code} Use 'from {correct_module} import {members}' "
     "instead of 'from {module} import {members}'"
@@ -28,8 +28,124 @@ QGS105 = (
     "instead import it: 'from qgis.utils import iface'"
 )
 QGS106 = "QGS106 Use 'from osgeo import {members}' instead of 'import {members}'"
+QGS107 = "QGS107 Use 'exec' instead of 'exec_'"
 
+
+# QGIS>=4 rules,
+# greatly inspired by https://github.com/qgis/QGIS/blob/master/scripts/pyqt5_to_pyqt6/pyqt5_to_pyqt6.py
+# licensed under GNU General Public License v2.0
+QGS401 = (
+    "QGS401 Use 'QApplication.instance()' or 'QgsApplication.instance()'"
+    " instead of 'qApp'"
+)
+QGS402 = (
+    "QGS402 Use 'QMetaType.{new}' or 'QMetaType.Type.{new}'"
+    " instead of 'QVariant.{old}'. "
+    "WARNING: after this, the plugin may not be compatible with QGIS 3."
+)
+QGS403 = "QGS403 Enum has been changed in Qt6. Use '{new}' instead of '{old}'."
+QGS404 = (
+    "QGS404 QFontMetrics.width() has been removed in Qt6. "
+    "Use QFontMetrics.horizontalAdvance() or "
+    "QFontMetrics.boundingRect().width() instead."
+)
+QGS405 = "QGS405 activated[str] has been removed in Qt6, use textActivated instead"
+QGS406 = "QGS406 QRegExp is removed in Qt6, use QRegularExpression instead"
+QGS407 = (
+    "QGS407 QDesktopWidget is removed in Qt6. "
+    "Replace with alternative approach instead."
+)
+QGS408 = (
+    "QGS408 support for compiled resources is removed in Qt6. "
+    "Directly load icon resources. by file path and load UI fields using "
+    "uic.loadUiType by file path instead."
+)
+QGS409 = (
+    "QGS409 fragile call to addAction. Use my_action = QAction(...), "
+    "obj.addAction(my_action) instead."
+)
+QGS410 = (
+    "QGS410 Invalid conversion of QVariant({attr}) to NULL. "
+    "Use from qgis.core import NULL instead."
+)
+QGS411 = (
+    "QGS411 QDateTime(yyyy, mm, dd, hh, MM, ss, ms, ts) doesn't work "
+    "anymore in Qt6, port to more reliable QDateTime(QDate, QTime, ts) form."
+)
+QGS412 = (
+    "QGS412 QDateTime(QDate(...)) doesn't work anymore in Qt6, "
+    "port to more reliable QDatetime(QDate, QTime(0,0,0)) form."
+)
+
+# Other constants
+
+CLASS_FACTORY = "classFactory"
+
+QGIS_INTERFACE = "QgisInterface"
 MINIMUM_REQUIRED_MODULES = 2
+QDATETIME_ARG_COUNT = 8
+ADD_ACTION_ARG_COUNT = 4
+
+QMETATYPE_MAPPING = {
+    "Invalid": "UnknownType",
+    "BitArray": "QBitArray",
+    "Bitmap": "QBitmap",
+    "Brush": "QBrush",
+    "ByteArray": "QByteArray",
+    "Char": "QChar",
+    "Color": "QColor",
+    "Cursor": "QCursor",
+    "Date": "QDate",
+    "DateTime": "QDateTime",
+    "EasingCurve": "QEasingCurve",
+    "Uuid": "QUuid",
+    "ModelIndex": "QModelIndex",
+    "PersistentModelIndex": "QPersistentModelIndex",
+    "Font": "QFont",
+    "Hash": "QVariantHash",
+    "Icon": "QIcon",
+    "Image": "QImage",
+    "KeySequence": "QKeySequence",
+    "Line": "QLine",
+    "LineF": "QLineF",
+    "List": "QVariantList",
+    "Locale": "QLocale",
+    "Map": "QVariantMap",
+    "Transform": "QTransform",
+    "Matrix4x4": "QMatrix4x4",
+    "Palette": "QPalette",
+    "Pen": "QPen",
+    "Pixmap": "QPixmap",
+    "Point": "QPoint",
+    "PointF": "QPointF",
+    "Polygon": "QPolygon",
+    "PolygonF": "QPolygonF",
+    "Quaternion": "QQuaternion",
+    "Rect": "QRect",
+    "RectF": "QRectF",
+    "RegularExpression": "QRegularExpression",
+    "Region": "QRegion",
+    "Size": "QSize",
+    "SizeF": "QSizeF",
+    "SizePolicy": "QSizePolicy",
+    "String": "QString",
+    "StringList": "QStringList",
+    "TextFormat": "QTextFormat",
+    "TextLength": "QTextLength",
+    "Time": "QTime",
+    "Url": "QUrl",
+    "Vector2D": "QVector2D",
+    "Vector3D": "QVector3D",
+    "Vector4D": "QVector4D",
+    "UserType": "User",
+}
+
+DEPRECATED_RENAMED_ENUMS = {
+    ("Qt", "MidButton"): ("MouseButton", "MiddleButton"),
+    ("Qt", "TextColorRole"): ("ItemDataRole", "ForegroundRole"),
+    ("Qt", "BackgroundColorRole"): ("ItemDataRole", "BackgroundRole"),
+    ("QPainter", "HighQualityAntialiasing"): ("RenderHint", "Antialiasing"),
+}
 
 
 def _test_qgis_module(module: Optional[str]) -> Optional[str]:
@@ -129,6 +245,238 @@ def _get_qgs106(node: ast.Import) -> list["FlakeError"]:
     return errors
 
 
+def _get_qgs406_import_from(node: ast.ImportFrom) -> list["FlakeError"]:
+    errors: list[FlakeError] = []
+    for name in node.names:
+        if name.name == "QRegExp":
+            errors.append((node.lineno, node.col_offset, QGS406))
+    return errors
+
+
+def _get_qgs408_import_from(node: ast.ImportFrom) -> list["FlakeError"]:
+    if node.module == "resources_rc":
+        return [(node.lineno, node.col_offset, QGS408)]
+    return []
+
+
+def _get_qgs406_import(node: ast.Import) -> list["FlakeError"]:
+    errors: list[FlakeError] = []
+    for alias in node.names:
+        if alias.name == "QRegExp":
+            errors.append((node.lineno, node.col_offset, QGS406))
+    return errors
+
+
+def _get_qgs408_import(node: ast.Import) -> list["FlakeError"]:
+    errors: list[FlakeError] = []
+    for alias in node.names:
+        if alias.name == "resources_rc":
+            errors.append((node.lineno, node.col_offset, QGS408))
+    return errors
+
+
+def _get_qgs107(node: ast.FunctionDef) -> list["FlakeError"]:
+    if node.name == "exec_":
+        return [(node.lineno, node.col_offset, QGS107)]
+    return []
+
+
+def _get_qgs107_attribute(node: ast.Attribute) -> list["FlakeError"]:
+    if node.attr == "exec_":
+        return [(node.lineno, node.col_offset, QGS107)]
+    return []
+
+
+def _get_qgs401(node: ast.Name) -> list["FlakeError"]:
+    if node.id == "qApp":
+        return [(node.lineno, node.col_offset, QGS401)]
+    return []
+
+
+def _get_qgs406(node: ast.Name) -> list["FlakeError"]:
+    if node.id == "QRegExp":
+        return [(node.lineno, node.col_offset, QGS406)]
+    return []
+
+
+def _get_qgs402(
+    node: ast.Attribute, existing_errors: list["FlakeError"]
+) -> list["FlakeError"]:
+    if not (isinstance(node.value, ast.Name) and node.value.id == "QVariant"):
+        return []
+
+    # If there is a NULL warning, let's not add another one here.
+    for error in existing_errors:
+        if "QGS4" in error[2] and "NULL" in error[2]:
+            return []
+
+    old_attr = node.attr
+    if (
+        old_attr == "Type"
+        and hasattr(node, "parent")
+        and isinstance(node.parent, ast.Attribute)
+    ):
+        old_attr = f"Type.{node.parent.attr}"
+        new_attr = QMETATYPE_MAPPING.get(node.parent.attr, node.parent.attr)
+    else:
+        new_attr = QMETATYPE_MAPPING.get(old_attr, old_attr)
+    return [
+        (
+            node.lineno,
+            node.col_offset,
+            QGS402.format(new=new_attr, old=old_attr),
+        )
+    ]
+
+
+def _get_qgs403(node: ast.Attribute) -> list["FlakeError"]:
+    if (
+        isinstance(node.value, ast.Name)
+        and (
+            node.value.id,
+            node.attr,
+        )
+        in DEPRECATED_RENAMED_ENUMS
+    ):
+        new = ".".join(
+            [node.value.id, *DEPRECATED_RENAMED_ENUMS[(node.value.id, node.attr)]]
+        )
+        old = ".".join([node.value.id, node.attr])
+        return [(node.lineno, node.col_offset, QGS403.format(new=new, old=old))]
+
+    if (
+        isinstance(node.value, ast.Name)
+        and hasattr(node, "parent")
+        and isinstance(node.parent, ast.Attribute)
+        and (node.value.id, node.parent.attr) in DEPRECATED_RENAMED_ENUMS
+    ):
+        new = ".".join(
+            [
+                node.value.id,
+                *DEPRECATED_RENAMED_ENUMS[(node.value.id, node.parent.attr)],
+            ]
+        )
+        old = ".".join([node.value.id, node.attr, node.parent.attr])
+        return [(node.lineno, node.col_offset, QGS403.format(new=new, old=old))]
+
+    return []
+
+
+def _get_qgs404(node: ast.Attribute) -> list["FlakeError"]:
+    if node.attr != "width":
+        return []
+
+    # Check for QFontMetrics.width()
+    # It can be a call QFontMetrics(font).width() or a name font_metrics.width()
+    # The original code used object_types to track font metrics objects
+    # Here we just check for 'width' attribute as a heuristic, or if it's called
+    # on QFontMetrics
+    if (
+        isinstance(node.value, ast.Call)
+        and isinstance(node.value.func, ast.Name)
+        and node.value.func.id in ("QFontMetrics", "QFontMetricsF")
+    ):
+        return [(node.lineno, node.col_offset, QGS404)]
+
+    if isinstance(node.value, ast.Name) and "metrics" in node.value.id.lower():
+        # Heuristic for variables named like *_metrics
+        return [(node.lineno, node.col_offset, QGS404)]
+
+    return []
+
+
+def _get_qgs405(node: ast.Subscript) -> list["FlakeError"]:
+    if not (isinstance(node.value, ast.Attribute) and node.value.attr == "activated"):
+        return []
+
+    # activated[str]
+    if isinstance(node.slice, ast.Name) and node.slice.id == "str":
+        return [(node.lineno, node.col_offset, QGS405)]
+    if isinstance(node.slice, ast.Constant) and node.slice.value == "str":
+        # For python 3.9+ where ast.Index is deprecated
+        # and slice is just a Constant
+        return [(node.lineno, node.col_offset, QGS405)]
+    return []
+
+
+def _get_qgs404_call_attribute(node: Call) -> list["FlakeError"]:
+    assert isinstance(node.func, ast.Attribute)
+    if (
+        node.func.attr == "width"
+        and isinstance(node.func.value, ast.Attribute)
+        and node.func.value.attr.lower() in ("fontmetrics", "qfontmetrics")
+    ):
+        # obj.fontMetrics().width()
+        return [(node.lineno, node.col_offset, QGS404)]
+    return []
+
+
+def _get_qgs407(node: Call) -> list["FlakeError"]:
+    assert isinstance(node.func, ast.Attribute)
+    if node.func.attr == "desktop":
+        return [(node.lineno, node.col_offset, QGS407)]
+    return []
+
+
+def _get_qgs409(node: Call) -> list["FlakeError"]:
+    assert isinstance(node.func, ast.Attribute)
+    if node.func.attr == "addAction" and len(node.args) >= ADD_ACTION_ARG_COUNT:
+        return [(node.lineno, node.col_offset, QGS409)]
+    return []
+
+
+def _get_qgs410(node: Call) -> list["FlakeError"]:
+    assert isinstance(node.func, ast.Name)
+    if node.func.id != "QVariant":
+        return []
+
+    if not node.args:
+        return [(node.lineno, node.col_offset, QGS410.format(attr=""))]
+
+    if (
+        len(node.args) == 1
+        and isinstance(node.args[0], ast.Attribute)
+        and isinstance(node.args[0].value, ast.Name)
+        and node.args[0].value.id == "QVariant"
+    ):
+        return [
+            (
+                node.lineno,
+                node.col_offset,
+                QGS410.format(attr=node.args[0].value.id),
+            )
+        ]
+
+    return []
+
+
+def _get_qgs411(node: Call) -> list["FlakeError"]:
+    assert isinstance(node.func, ast.Name)
+    if node.func.id == "QDateTime" and len(node.args) == QDATETIME_ARG_COUNT:
+        # QDateTime(yyyy, mm, dd, hh, MM, ss, ms, ts)
+        return [(node.lineno, node.col_offset, QGS411)]
+    return []
+
+
+def _get_qgs412(node: Call) -> list["FlakeError"]:
+    assert isinstance(node.func, ast.Name)
+    if node.func.id == "QDateTime" and (
+        len(node.args) == 1
+        and isinstance(node.args[0], ast.Call)
+        and hasattr(node.args[0].func, "id")
+        and node.args[0].func.id == "QDate"
+    ):
+        # QDateTime(QDate(...))
+        return [(node.lineno, node.col_offset, QGS412)]
+    return []
+
+
+def _remove_qgs402_qmetatype_errors(errors: list["FlakeError"]) -> None:
+    for error in errors[:]:
+        if "QGS4" in error[2] and "'QMetaType." in error[2]:
+            errors.remove(error)
+
+
 class Visitor(ast.NodeVisitor):
     def __init__(self) -> None:
         self.errors: list[FlakeError] = []
@@ -136,16 +484,54 @@ class Visitor(ast.NodeVisitor):
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         self.errors += _test_module_at_import_from("QGS101", node, _test_qgis_module)
         self.errors += _test_module_at_import_from("QGS103", node, _test_pyqt_module)
+        self.errors += _get_qgs406_import_from(node)
+        self.errors += _get_qgs408_import_from(node)
         self.generic_visit(node)
 
     def visit_Import(self, node: Import) -> None:
         self.errors += _test_module_at_import("QGS102", node, _test_qgis_module)
         self.errors += _test_module_at_import("QGS104", node, _test_pyqt_module)
         self.errors += _get_qgs106(node)
+        self.errors += _get_qgs406_import(node)
+        self.errors += _get_qgs408_import(node)
         self.generic_visit(node)
 
     def visit_FunctionDef(self, node: FunctionDef) -> None:
         self.errors += _get_qgs105(node)
+        self.errors += _get_qgs107(node)
+        self.generic_visit(node)
+
+    def visit_Name(self, node: ast.Name) -> None:
+        self.errors += _get_qgs401(node)
+        self.errors += _get_qgs406(node)
+        self.generic_visit(node)
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        self.errors += _get_qgs107_attribute(node)
+        self.errors += _get_qgs402(node, self.errors)
+        self.errors += _get_qgs403(node)
+        self.errors += _get_qgs404(node)
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        if isinstance(node.func, ast.Attribute):
+            self.errors += _get_qgs404_call_attribute(node)
+            self.errors += _get_qgs407(node)
+            self.errors += _get_qgs409(node)
+        elif isinstance(node.func, ast.Name):
+            qgs410_errors = _get_qgs410(node)
+            if qgs410_errors:
+                self.errors += qgs410_errors
+                # There might be QMetaType error as well, let's remove it.
+                _remove_qgs402_qmetatype_errors(self.errors)
+
+            self.errors += _get_qgs411(node)
+            self.errors += _get_qgs412(node)
+
+        self.generic_visit(node)
+
+    def visit_Subscript(self, node: ast.Subscript) -> None:
+        self.errors += _get_qgs405(node)
         self.generic_visit(node)
 
 
