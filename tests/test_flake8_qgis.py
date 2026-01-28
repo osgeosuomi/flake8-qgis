@@ -1,4 +1,5 @@
 import ast
+from textwrap import dedent
 
 from flake8_qgis import Plugin
 
@@ -179,6 +180,38 @@ def test_QGS107():
     assert ret == {"1:0 QGS107 Use 'exec' instead of 'exec_'"}
     ret = _results("def exec_(): pass")
     assert ret == {"1:0 QGS107 Use 'exec' instead of 'exec_'"}
+
+
+def test_QGS108_and_QGS109():
+    ret = _results('output = "TEMPORARY_OUTPUT"')
+    assert ret == {
+        "1:9 QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
+    }
+
+    ret = _results(
+        dedent(
+            """
+        processing.run("foo", "bar", "TEMPORARY_OUTPUT")
+        """
+        )
+    )
+
+    assert ret == {
+        "2:29 QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
+    }
+
+    ret = _results('output = "TEMPORARY_OUTPT"')
+    assert ret == {
+        "1:9 QGS109 Replace 'TEMPORARY_OUTPT' with QgsProcessing.TEMPORARY_OUTPUT"
+    }
+
+    ret = _results('output = "TEMPORARY_OUTPUTS"')
+    assert ret == {
+        "1:9 QGS109 Replace 'TEMPORARY_OUTPUTS' with QgsProcessing.TEMPORARY_OUTPUT"
+    }
+
+    ret = _results('output = "something else"')
+    assert ret == set()
 
 
 def test_QGS401():
