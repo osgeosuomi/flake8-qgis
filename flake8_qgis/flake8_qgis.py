@@ -3,12 +3,10 @@ import importlib.metadata as importlib_metadata
 import re
 from _ast import FunctionDef, Import
 from ast import Call
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
 )
 
 if TYPE_CHECKING:
@@ -148,7 +146,7 @@ DEPRECATED_RENAMED_ENUMS = {
 }
 
 
-def _test_qgis_module(module: Optional[str]) -> Optional[str]:
+def _test_qgis_module(module: str | None) -> str | None:
     if module is None:
         return None
 
@@ -167,7 +165,7 @@ def _test_qgis_module(module: Optional[str]) -> Optional[str]:
     return None
 
 
-def _test_pyqt_module(module: Optional[str]) -> Optional[str]:
+def _test_pyqt_module(module: str | None) -> str | None:
     if module is None:
         return None
 
@@ -182,7 +180,7 @@ def _test_pyqt_module(module: Optional[str]) -> Optional[str]:
 def _test_module_at_import_from(
     error_code: str,
     node: ast.ImportFrom,
-    tester: Callable[[Optional[str]], Optional[str]],
+    tester: Callable[[str | None], str | None],
 ) -> list["FlakeError"]:
     fixed_module_name = tester(node.module)
     if fixed_module_name:
@@ -199,7 +197,7 @@ def _test_module_at_import_from(
 
 
 def _test_module_at_import(
-    error_code: str, node: ast.Import, tester: Callable[[Optional[str]], Optional[str]]
+    error_code: str, node: ast.Import, tester: Callable[[str | None], str | None]
 ) -> list["FlakeError"]:
     errors: list[FlakeError] = []
     for alias in node.names:
