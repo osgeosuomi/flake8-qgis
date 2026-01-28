@@ -29,6 +29,9 @@ QGS106 = "QGS106 Use 'from osgeo import {members}' instead of 'import {members}'
 QGS107 = "QGS107 Use 'exec' instead of 'exec_'"
 QGS108 = "QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
 QGS109 = "QGS109 Replace '{old}' with QgsProcessing.TEMPORARY_OUTPUT"
+QGS110 = (
+    "QGS110 Use is_child_algorithm=True when running other algorithms in the plugin"
+)
 
 
 # QGIS>=4 rules,
@@ -286,6 +289,30 @@ def _get_qgs107(node: ast.FunctionDef) -> list["FlakeError"]:
 def _get_qgs107_attribute(node: ast.Attribute) -> list["FlakeError"]:
     if node.attr == "exec_":
         return [(node.lineno, node.col_offset, QGS107)]
+    return []
+
+
+def _get_qgs110(node: Call) -> list["FlakeError"]:
+    assert isinstance(node.func, ast.Attribute)
+    if not (
+        isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "processing"
+        and node.func.attr == "run"
+    ):
+        return []
+
+    is_child_keyword = None
+    for keyword in node.keywords:
+        if keyword.arg == "is_child_algorithm":
+            is_child_keyword = keyword
+            break
+
+    if is_child_keyword is None or (
+        isinstance(is_child_keyword.value, ast.Constant)
+        and is_child_keyword.value.value is False
+    ):
+        return [(node.lineno, node.col_offset, QGS110)]
+
     return []
 
 
@@ -567,6 +594,7 @@ class Visitor(ast.NodeVisitor):
             self.errors += _get_qgs404_call_attribute(node)
             self.errors += _get_qgs407(node)
             self.errors += _get_qgs409(node)
+            self.errors += _get_qgs110(node)
         elif isinstance(node.func, ast.Name):
             qgs410_errors = _get_qgs410(node)
             if qgs410_errors:

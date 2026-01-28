@@ -38,6 +38,7 @@ Rule | Description
 [QGS107](#QGS107) | Use 'exec' instead of 'exec_'
 [QGS108](#QGS108) | Use QgsProcessing.TEMPORARY_OUTPUT instead of "TEMPORARY_OUTPUT"
 [QGS109](#QGS109) | Use QgsProcessing.TEMPORARY_OUTPUT instead of misspelled "TEMPORARY_OUTPUT"
+[QGS110](#QGS110) | Use is_child_algorithm=True when running other algorithms in the plugin
 [QGS401](#QGS401) | Use 'QApplication.instance()' instead of 'qApp'
 [QGS402](#QGS402) | Use 'QMetaType.Type.X' instead of 'QVariant.X'
 [QGS403](#QGS403) | Used enum has been removed in Qt6
@@ -236,6 +237,27 @@ output = "TEMPRARY_OUTPUT"
 # Good
 from qgis.core import QgsProcessing
 output = QgsProcessing.TEMPORARY_OUTPUT
+```
+
+### QGS110
+Use is_child_algorithm=True when running other algorithms in the plugin
+
+#### Why is this bad?
+
+This rule applies to all algorithms that run other algorithms. Feel free to ignore the rule if you are just running an algorithm in your plugin.
+
+Ensuring the algorithm is run as a child algorithm will help to avoid crashes and otherwise surprising behavior.
+
+#### Example
+
+```python
+# Bad
+# In your own algorithm
+processing.run("native:buffer", {"INPUT": layer})
+
+# Good
+# In your own algorithm
+processing.run("native:buffer", {"INPUT": layer}, is_child_algorithm=True)
 ```
 
 ## QGIS 4 compatibility rules
