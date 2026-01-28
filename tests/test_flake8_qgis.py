@@ -191,7 +191,7 @@ def test_QGS108_and_QGS109():
     ret = _results(
         dedent(
             """
-        processing.run("foo", "bar", "TEMPORARY_OUTPUT")
+        processing.run("foo", "bar", "TEMPORARY_OUTPUT", is_child_algorithm=True)
         """
         )
     )
@@ -212,6 +212,23 @@ def test_QGS108_and_QGS109():
 
     ret = _results('output = "something else"')
     assert ret == set()
+
+
+def test_QGS110():
+    ret = _results("processing.run('native:buffer', {}, is_child_algorithm=True)")
+    assert ret == set()
+
+    ret = _results("processing.run('native:buffer', {})")
+    assert ret == {
+        "1:0 QGS110 Use is_child_algorithm=True when running other algorithms in the "
+        "plugin"
+    }
+
+    ret = _results("processing.run('native:buffer', {}, is_child_algorithm=False)")
+    assert ret == {
+        "1:0 QGS110 Use is_child_algorithm=True when running other algorithms in the "
+        "plugin"
+    }
 
 
 def test_QGS401():
