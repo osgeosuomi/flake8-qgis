@@ -8,6 +8,7 @@
 
 * Update development environment and reformat codebase
 * Update maintainer information
+* Drop support for Python 3.9
 
 # Version 1.1.0 (19-05-2025)
 
