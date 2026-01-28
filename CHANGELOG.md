@@ -3,6 +3,7 @@
 ## New Features
 
 * [#22](https://github.com/osgeosuomi/flake8-qgis/issues/22) Add QGIS 4 compatibility rules
+* [#27](https://github.com/osgeosuomi/flake8-qgis/pull/27) Add new rules QGS108 and QGS109 to replace "TEMPORARY_OUTPUT" with QgsProcessing.TEMPORARY_OUTPUT
 
 ## Maintenance tasks
 

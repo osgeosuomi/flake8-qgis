@@ -36,6 +36,8 @@ Rule | Description
 [QGS105](#QGS105) | Avoid passing QgisInterface as an argument
 [QGS106](#QGS106) | Avoid importing gdal directly, import it from osgeo package
 [QGS107](#QGS107) | Use 'exec' instead of 'exec_'
+[QGS108](#QGS108) | Use QgsProcessing.TEMPORARY_OUTPUT instead of "TEMPORARY_OUTPUT"
+[QGS109](#QGS109) | Use QgsProcessing.TEMPORARY_OUTPUT instead of misspelled "TEMPORARY_OUTPUT"
 [QGS401](#QGS401) | Use 'QApplication.instance()' instead of 'qApp'
 [QGS402](#QGS402) | Use 'QMetaType.Type.X' instead of 'QVariant.X'
 [QGS403](#QGS403) | Used enum has been removed in Qt6
@@ -200,6 +202,40 @@ window.exec_()
 
 # Good
 window.exec()
+```
+
+### QGS108
+Use QgsProcessing.TEMPORARY_OUTPUT instead of "TEMPORARY_OUTPUT"
+
+#### Why is this bad?
+It is a good practice to use the constant that PyQGIS API provides.
+
+#### Example
+
+```python
+# Bad
+output = "TEMPORARY_OUTPUT"
+
+# Good
+from qgis.core import QgsProcessing
+output = QgsProcessing.TEMPORARY_OUTPUT
+```
+
+### QGS109
+Use QgsProcessing.TEMPORARY_OUTPUT instead of misspelled "TEMPORARY_OUTPUT"
+
+#### Why is this bad?
+It is a good practice to use the constant that PyQGIS API provides.
+
+#### Example
+
+```python
+# Bad
+output = "TEMPRARY_OUTPUT"
+
+# Good
+from qgis.core import QgsProcessing
+output = QgsProcessing.TEMPORARY_OUTPUT
 ```
 
 ## QGIS 4 compatibility rules

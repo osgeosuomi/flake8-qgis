@@ -27,6 +27,8 @@ QGS105 = (
 )
 QGS106 = "QGS106 Use 'from osgeo import {members}' instead of 'import {members}'"
 QGS107 = "QGS107 Use 'exec' instead of 'exec_'"
+QGS108 = "QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
+QGS109 = "QGS109 Replace '{old}' with QgsProcessing.TEMPORARY_OUTPUT"
 
 
 # QGIS>=4 rules,
@@ -80,6 +82,8 @@ QGS412 = (
 CLASS_FACTORY = "classFactory"
 
 QGIS_INTERFACE = "QgisInterface"
+TEMPORARY_OUTPUT = "TEMPORARY_OUTPUT"
+
 MINIMUM_REQUIRED_MODULES = 2
 QDATETIME_ARG_COUNT = 8
 ADD_ACTION_ARG_COUNT = 4
@@ -469,6 +473,53 @@ def _get_qgs412(node: Call) -> list["FlakeError"]:
     return []
 
 
+def _is_within_one_edit(actual: str, expected: str) -> bool:
+    if actual == expected:
+        return True
+
+    len_actual = len(actual)
+    len_expected = len(expected)
+    if abs(len_actual - len_expected) > 1:
+        return False
+
+    if len_actual == len_expected:
+        mismatches = sum(1 for a, b in zip(actual, expected, strict=True) if a != b)
+        return mismatches <= 1
+
+    if len_actual < len_expected:
+        actual, expected = expected, actual
+        len_actual, len_expected = len_expected, len_actual
+
+    idx_actual = 0
+    idx_expected = 0
+    found_diff = False
+    while idx_actual < len_actual and idx_expected < len_expected:
+        if actual[idx_actual] == expected[idx_expected]:
+            idx_actual += 1
+            idx_expected += 1
+            continue
+        if found_diff:
+            return False
+        found_diff = True
+        idx_actual += 1
+
+    return True
+
+
+def _get_qgs108_and_qgs109(node: ast.Constant) -> list["FlakeError"]:
+    if isinstance(node.value, str):
+        if node.value == TEMPORARY_OUTPUT:
+            return [(node.lineno, node.col_offset, QGS108)]
+
+        if (
+            node.value.startswith("TEMP")
+            and "_" in node.value
+            and _is_within_one_edit(node.value, TEMPORARY_OUTPUT)
+        ):
+            return [(node.lineno, node.col_offset, QGS109.format(old=node.value))]
+    return []
+
+
 def _remove_qgs402_qmetatype_errors(errors: list["FlakeError"]) -> None:
     for error in errors[:]:
         if "QGS4" in error[2] and "'QMetaType." in error[2]:
@@ -530,6 +581,10 @@ class Visitor(ast.NodeVisitor):
 
     def visit_Subscript(self, node: ast.Subscript) -> None:
         self.errors += _get_qgs405(node)
+        self.generic_visit(node)
+
+    def visit_Constant(self, node: ast.Constant) -> None:
+        self.errors += _get_qgs108_and_qgs109(node)
         self.generic_visit(node)
 
 
