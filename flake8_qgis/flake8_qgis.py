@@ -1,9 +1,12 @@
 import ast
 import importlib.metadata as importlib_metadata
+import json
 import re
 from _ast import FunctionDef, Import
 from ast import Call
+from collections import defaultdict
 from collections.abc import Callable, Generator
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -31,6 +34,16 @@ QGS108 = "QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
 QGS109 = "QGS109 Replace '{old}' with QgsProcessing.TEMPORARY_OUTPUT"
 QGS110 = (
     "QGS110 Use is_child_algorithm=True when running other algorithms in the plugin"
+)
+
+# Return value rules
+QGS201 = (
+    "QGS201 Check the success flag and possibly "
+    "error message from return value of {method}."
+)
+QGS202 = (
+    "QGS202 Check the success flag and possibly error message from "
+    "return value of the method if it is {method}. Otherwise ignore this error."
 )
 
 
@@ -151,6 +164,36 @@ DEPRECATED_RENAMED_ENUMS = {
     ("Qt", "BackgroundColorRole"): ("ItemDataRole", "BackgroundRole"),
     ("QPainter", "HighQualityAntialiasing"): ("RenderHint", "Antialiasing"),
 }
+
+QGIS_RETURN_METHODS_PATH = Path(__file__).with_name("qgis_return_methods.json")
+
+
+def _load_return_methods() -> dict[str, set[str]]:
+    try:
+        raw = QGIS_RETURN_METHODS_PATH.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+
+    class_methods = data.get("methods_to_check", [])
+    classes_by_methods: dict[str, set[str]] = defaultdict(set[str])
+
+    for method in class_methods:
+        parts = method.split(".")
+        if len(parts) == 2:  # noqa: PLR2004
+            classes_by_methods[parts[1]].add(parts[0])
+        else:
+            # Adds just the key
+            classes_by_methods[method]
+
+    return classes_by_methods
+
+
+RETURN_VALUES_TO_CHECK = _load_return_methods()
 
 
 def _test_qgis_module(module: str | None) -> str | None:
@@ -313,6 +356,34 @@ def _get_qgs110(node: Call) -> list["FlakeError"]:
     ):
         return [(node.lineno, node.col_offset, QGS110)]
 
+    return []
+
+
+def _get_qgs201(node: ast.Call) -> list["FlakeError"]:
+    assert isinstance(node.func, ast.Attribute)
+    method_name = node.func.attr
+    if (
+        method_name
+        and method_name in RETURN_VALUES_TO_CHECK
+        and (_call_is_ignored(node) and not _call_used_as_condition(node))
+    ):
+        if class_names := RETURN_VALUES_TO_CHECK[method_name]:
+            if len(class_names) > 1:
+                method = "some of (" + ", ".join(
+                    f"{class_name}.{method_name}()"
+                    for class_name in sorted(RETURN_VALUES_TO_CHECK[method_name])
+                )
+                method += ")"
+            else:
+                method = f"{next(iter(class_names))}.{method_name}()"
+        else:
+            method = method_name
+
+        # Method has a higher certainty for method to be a PyQgs
+        # method if it contains uppercase letters
+        rule = QGS201 if any(c.isupper() for c in method_name) else QGS202
+
+        return [(node.lineno, node.col_offset, rule.format(method=method))]
     return []
 
 
@@ -553,6 +624,32 @@ def _remove_qgs402_qmetatype_errors(errors: list["FlakeError"]) -> None:
             errors.remove(error)
 
 
+def _call_is_ignored(node: ast.Call) -> bool:
+    return isinstance(getattr(node, "parent", None), ast.Expr)
+
+
+def _call_used_as_condition(node: ast.Call) -> bool:
+    current: ast.AST = node
+    parent = getattr(node, "parent", None)
+    while parent is not None:
+        if isinstance(parent, (ast.Subscript, ast.Attribute)):
+            return False
+        if isinstance(
+            parent,
+            (ast.UnaryOp, ast.BoolOp, ast.Compare, ast.BinOp, ast.NamedExpr),
+        ):
+            current = parent
+            parent = getattr(current, "parent", None)
+            continue
+        if (
+            isinstance(parent, (ast.If, ast.While, ast.Assert))
+            and parent.test is current
+        ):
+            return True
+        break
+    return False
+
+
 class Visitor(ast.NodeVisitor):
     def __init__(self) -> None:
         self.errors: list[FlakeError] = []
@@ -595,6 +692,7 @@ class Visitor(ast.NodeVisitor):
             self.errors += _get_qgs407(node)
             self.errors += _get_qgs409(node)
             self.errors += _get_qgs110(node)
+            self.errors += _get_qgs201(node)
         elif isinstance(node.func, ast.Name):
             qgs410_errors = _get_qgs410(node)
             if qgs410_errors:
