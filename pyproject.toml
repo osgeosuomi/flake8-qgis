@@ -60,7 +60,7 @@ QGS = "flake8_qgis:Plugin"
 packages = ["flake8_qgis"]
 
 [tool.setuptools.package-data]
-"flake8_qgis" = ["py.typed"]
+"flake8_qgis" = ["py.typed", "qgis_return_methods.json"]
 
 [tool.pytest.ini_options]
 doctest_encoding = "utf-8"

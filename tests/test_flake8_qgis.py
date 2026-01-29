@@ -1,6 +1,9 @@
 import ast
 from textwrap import dedent
 
+import pytest
+
+import flake8_qgis.flake8_qgis as flake8_qgis_module
 from flake8_qgis import Plugin
 
 """Tests for `flake8_qgis` package."""
@@ -229,6 +232,58 @@ def test_QGS110():
         "1:0 QGS110 Use is_child_algorithm=True when running other algorithms in the "
         "plugin"
     }
+
+
+@pytest.mark.parametrize(
+    ("method_name", "expected_method"),
+    [
+        (
+            "addMapLayer",
+            "some of (QgsMapLayerStore.addMapLayer(), QgsProject.addMapLayer())",
+        ),
+        ("saveWithDetails", "QgsAttributeForm.saveWithDetails()"),
+    ],
+)
+def test_QGS201_ignored_return(method_name, expected_method):
+    assert method_name in flake8_qgis_module.RETURN_VALUES_TO_CHECK
+    ret = _results(f"project.{method_name}('foo')")
+    assert ret == {
+        "1:0 QGS201 Check the success flag and possibly error message from return "
+        f"value of {expected_method}."
+    }
+
+
+@pytest.mark.parametrize(
+    ("method_name", "expected_method"),
+    [
+        (
+            "prepare",
+            "some of (QgsAbstractPropertyCollection.prepare(), "
+            "QgsDiagramLayerSettings.prepare(), QgsProperty.prepare())",
+        ),
+        ("calculate", "QgsAggregateCalculator.calculate()"),
+    ],
+)
+def test_QGS202_ignored_return(method_name, expected_method):
+    assert method_name in flake8_qgis_module.RETURN_VALUES_TO_CHECK
+    ret = _results(f"project.{method_name}(layer)")
+    assert ret == {
+        "1:0 QGS202 Check the success flag and possibly error message from return "
+        f"value of the method if it is {expected_method}. Otherwise "
+        "ignore this error."
+    }
+
+
+def test_QGS202_used_as_condition():
+    method_name = "read"
+    assert method_name in flake8_qgis_module.RETURN_VALUES_TO_CHECK
+    ret = _results(
+        f"""
+if project.{method_name}("foo"):
+    pass
+        """
+    )
+    assert ret == set()
 
 
 def test_QGS401():

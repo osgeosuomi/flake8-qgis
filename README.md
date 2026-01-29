@@ -39,6 +39,8 @@ Rule | Description
 [QGS108](#QGS108) | Use QgsProcessing.TEMPORARY_OUTPUT instead of "TEMPORARY_OUTPUT"
 [QGS109](#QGS109) | Use QgsProcessing.TEMPORARY_OUTPUT instead of misspelled "TEMPORARY_OUTPUT"
 [QGS110](#QGS110) | Use is_child_algorithm=True when running other algorithms in the plugin
+[QGS201](#QGS201) | Check return values from a probable PyQgs method call
+[QGS202](#QGS202) | Check return values from a possible PyQgs method call
 [QGS401](#QGS401) | Use 'QApplication.instance()' instead of 'qApp'
 [QGS402](#QGS402) | Use 'QMetaType.Type.X' instead of 'QVariant.X'
 [QGS403](#QGS403) | Used enum has been removed in Qt6
@@ -258,6 +260,48 @@ processing.run("native:buffer", {"INPUT": layer})
 # Good
 # In your own algorithm
 processing.run("native:buffer", {"INPUT": layer}, is_child_algorithm=True)
+```
+
+### QGS201
+Check return values from a probable PyQgs method call.
+
+Method is probably a PyQgs method because it is on the [qgis_return_methods.json](flake8_qgis/qgis_return_methods.json) list
+and it has uppercase characters in its name.
+
+#### Why is this bad?
+Some PyQgs methods return a success flag and or an error message.
+Ignoring the return value can hide errors and skip the message.
+
+#### Example
+```python
+# Bad
+project.writeToFile("project.qgz")
+
+# Good
+ok, msg = project.writeToFile("project.qgz")
+if not ok:
+    raise RuntimeError(msg)
+```
+
+### QGS202
+Check return values from a possible PyQgs method call.
+
+Method is possible a PyQgs method because it is on the [qgis_return_methods.json](flake8_qgis/qgis_return_methods.json) list
+but it does not have uppercase characters in its name. Feel free to ignore errors if they are not relevant.
+
+#### Why is this bad?
+Some PyQgs methods return a success flag and or an error message.
+Ignoring the return value can hide errors and skip the message.
+
+#### Example
+```python
+# Bad
+project.addMapLayer(layer)
+
+# Good
+added_layer = project.addMapLayer(layer)
+if added_layer is None:
+    raise RuntimeError("Layer could not be added")
 ```
 
 ## QGIS 4 compatibility rules
