@@ -265,8 +265,13 @@ processing.run("native:buffer", {"INPUT": layer}, is_child_algorithm=True)
 ### QGS201
 Check return values from a probable PyQgs method call.
 
-Method is probably a PyQgs method because it is on the [qgis_return_methods.json](flake8_qgis/qgis_return_methods.json) list
-and it has uppercase characters in its name.
+A method is determined to be **probably** a PyQgs method with the following logic:
+* It appears on the [qgis_return_methods.json](flake8_qgis/qgis_return_methods.json) list
+* And either of following conditions is met:
+  * The corresponding class is imported in the same file
+  * The method has uppercase characters in its name
+
+Feel free to ignore this rule for lines that are not relevant.
 
 #### Why is this bad?
 Some PyQgs methods return a success flag and or an error message.
@@ -275,9 +280,13 @@ Ignoring the return value can hide errors and skip the message.
 #### Example
 ```python
 # Bad
+from qgis.core import QgsProject
+
 project.writeToFile("project.qgz")
 
 # Good
+from qgis.core import QgsProject
+
 ok, msg = project.writeToFile("project.qgz")
 if not ok:
     raise RuntimeError(msg)
@@ -286,8 +295,13 @@ if not ok:
 ### QGS202
 Check return values from a possible PyQgs method call.
 
-Method is possible a PyQgs method because it is on the [qgis_return_methods.json](flake8_qgis/qgis_return_methods.json) list
-but it does not have uppercase characters in its name. Feel free to ignore errors if they are not relevant.
+A method is determined to be **possibly** a PyQgs method with the following logic:
+* It appears on the [qgis_return_methods.json](flake8_qgis/qgis_return_methods.json) list
+* And either of following conditions is met:
+    * The corresponding class is not imported in the same file
+    * The method has does not have uppercase characters in its name
+
+Feel free to ignore this rule for lines that are not relevant.
 
 #### Why is this bad?
 Some PyQgs methods return a success flag and or an error message.

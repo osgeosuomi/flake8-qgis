@@ -235,22 +235,49 @@ def test_QGS110():
 
 
 @pytest.mark.parametrize(
-    ("method_name", "expected_method"),
+    ("method_name", "imports", "expected_method"),
     [
         (
             "addMapLayer",
-            "some of (QgsMapLayerStore.addMapLayer(), QgsProject.addMapLayer())",
+            "from qgis.core import QgsProject",
+            "QgsProject.addMapLayer()",
         ),
-        ("saveWithDetails", "QgsAttributeForm.saveWithDetails()"),
+        (
+            "saveWithDetails",
+            "from qgis.core import QgsAttributeForm",
+            "QgsAttributeForm.saveWithDetails()",
+        ),
     ],
 )
-def test_QGS201_ignored_return(method_name, expected_method):
+def test_QGS201_ignored_return(method_name, imports, expected_method):
     assert method_name in flake8_qgis_module.RETURN_VALUES_TO_CHECK
-    ret = _results(f"project.{method_name}('foo')")
+    ret = _results(
+        dedent(
+            f"""
+            {imports}
+
+            project.instance().{method_name}('foo')
+            """
+        )
+    )
     assert ret == {
-        "1:0 QGS201 Check the success flag and possibly error message from return "
+        "4:0 QGS201 Check the success flag and possibly error message from return "
         f"value of {expected_method}."
     }
+
+
+def test_QGS201_return_not_ignored():
+    assert "addMapLayer" in flake8_qgis_module.RETURN_VALUES_TO_CHECK
+    ret = _results(
+        dedent(
+            """
+            from qgis.core import QgsProject
+
+            layer = project.instance().addMapLayer('foo')
+            """
+        )
+    )
+    assert ret == set()
 
 
 @pytest.mark.parametrize(
@@ -262,6 +289,10 @@ def test_QGS201_ignored_return(method_name, expected_method):
             "QgsDiagramLayerSettings.prepare(), QgsProperty.prepare())",
         ),
         ("calculate", "QgsAggregateCalculator.calculate()"),
+        (
+            "addMapLayer",
+            "some of (QgsMapLayerStore.addMapLayer(), QgsProject.addMapLayer())",
+        ),
     ],
 )
 def test_QGS202_ignored_return(method_name, expected_method):

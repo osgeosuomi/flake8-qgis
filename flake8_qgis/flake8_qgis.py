@@ -359,7 +359,9 @@ def _get_qgs110(node: Call) -> list["FlakeError"]:
     return []
 
 
-def _get_qgs201(node: ast.Call) -> list["FlakeError"]:
+def _get_qgs201_and_qgs202(
+    node: ast.Call, imported_names: set[str]
+) -> list["FlakeError"]:
     assert isinstance(node.func, ast.Attribute)
     method_name = node.func.attr
     if (
@@ -367,21 +369,27 @@ def _get_qgs201(node: ast.Call) -> list["FlakeError"]:
         and method_name in RETURN_VALUES_TO_CHECK
         and (_call_is_ignored(node) and not _call_used_as_condition(node))
     ):
+        # Now it is important to check whether method is really part of PyQgs API or
+        # if it just has a same name
         if class_names := RETURN_VALUES_TO_CHECK[method_name]:
-            if len(class_names) > 1:
+            # For class methods, use QGS201 only if the class is imported.
+            rule = QGS201 if class_names & imported_names else QGS202
+
+            if rule == QGS202 and len(class_names) > 1:
                 method = "some of (" + ", ".join(
                     f"{class_name}.{method_name}()"
                     for class_name in sorted(RETURN_VALUES_TO_CHECK[method_name])
                 )
                 method += ")"
+            elif rule == QGS201:
+                method = f"{next(iter(class_names & imported_names))}.{method_name}()"
             else:
                 method = f"{next(iter(class_names))}.{method_name}()"
         else:
+            # Method has a higher certainty for method to be a PyQgs
+            # method if it contains uppercase letters
+            rule = QGS201 if any(c.isupper() for c in method_name) else QGS202
             method = method_name
-
-        # Method has a higher certainty for method to be a PyQgs
-        # method if it contains uppercase letters
-        rule = QGS201 if any(c.isupper() for c in method_name) else QGS202
 
         return [(node.lineno, node.col_offset, rule.format(method=method))]
     return []
@@ -571,6 +579,26 @@ def _get_qgs412(node: Call) -> list["FlakeError"]:
     return []
 
 
+def _get_qgs108_and_qgs109(node: ast.Constant) -> list["FlakeError"]:
+    if isinstance(node.value, str):
+        if node.value == TEMPORARY_OUTPUT:
+            return [(node.lineno, node.col_offset, QGS108)]
+
+        if (
+            node.value.startswith("TEMP")
+            and "_" in node.value
+            and _is_within_one_edit(node.value, TEMPORARY_OUTPUT)
+        ):
+            return [(node.lineno, node.col_offset, QGS109.format(old=node.value))]
+    return []
+
+
+def _remove_qgs402_qmetatype_errors(errors: list["FlakeError"]) -> None:
+    for error in errors[:]:
+        if "QGS4" in error[2] and "'QMetaType." in error[2]:
+            errors.remove(error)
+
+
 def _is_within_one_edit(actual: str, expected: str) -> bool:
     if actual == expected:
         return True
@@ -604,26 +632,6 @@ def _is_within_one_edit(actual: str, expected: str) -> bool:
     return True
 
 
-def _get_qgs108_and_qgs109(node: ast.Constant) -> list["FlakeError"]:
-    if isinstance(node.value, str):
-        if node.value == TEMPORARY_OUTPUT:
-            return [(node.lineno, node.col_offset, QGS108)]
-
-        if (
-            node.value.startswith("TEMP")
-            and "_" in node.value
-            and _is_within_one_edit(node.value, TEMPORARY_OUTPUT)
-        ):
-            return [(node.lineno, node.col_offset, QGS109.format(old=node.value))]
-    return []
-
-
-def _remove_qgs402_qmetatype_errors(errors: list["FlakeError"]) -> None:
-    for error in errors[:]:
-        if "QGS4" in error[2] and "'QMetaType." in error[2]:
-            errors.remove(error)
-
-
 def _call_is_ignored(node: ast.Call) -> bool:
     return isinstance(getattr(node, "parent", None), ast.Expr)
 
@@ -653,21 +661,33 @@ def _call_used_as_condition(node: ast.Call) -> bool:
 class Visitor(ast.NodeVisitor):
     def __init__(self) -> None:
         self.errors: list[FlakeError] = []
+        self.imported_names: set[str] = set()
 
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+    def previsit_imports(self, tree: ast.AST) -> None:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    if alias.name != "*":
+                        self.imported_names.add(alias.name)
+                self._visit_import_from(node)
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if "." not in alias.name:
+                        self.imported_names.add(alias.name)
+                self._visit_import(node)
+
+    def _visit_import_from(self, node: ast.ImportFrom) -> None:
         self.errors += _test_module_at_import_from("QGS101", node, _test_qgis_module)
         self.errors += _test_module_at_import_from("QGS103", node, _test_pyqt_module)
         self.errors += _get_qgs406_import_from(node)
         self.errors += _get_qgs408_import_from(node)
-        self.generic_visit(node)
 
-    def visit_Import(self, node: Import) -> None:
+    def _visit_import(self, node: Import) -> None:
         self.errors += _test_module_at_import("QGS102", node, _test_qgis_module)
         self.errors += _test_module_at_import("QGS104", node, _test_pyqt_module)
         self.errors += _get_qgs106(node)
         self.errors += _get_qgs406_import(node)
         self.errors += _get_qgs408_import(node)
-        self.generic_visit(node)
 
     def visit_FunctionDef(self, node: FunctionDef) -> None:
         self.errors += _get_qgs105(node)
@@ -692,7 +712,7 @@ class Visitor(ast.NodeVisitor):
             self.errors += _get_qgs407(node)
             self.errors += _get_qgs409(node)
             self.errors += _get_qgs110(node)
-            self.errors += _get_qgs201(node)
+            self.errors += _get_qgs201_and_qgs202(node, self.imported_names)
         elif isinstance(node.func, ast.Name):
             qgs410_errors = _get_qgs410(node)
             if qgs410_errors:
@@ -723,6 +743,10 @@ class Plugin:
 
     def run(self) -> Generator[tuple[int, int, str, type[Any]], None, None]:
         visitor = Visitor()
+
+        # Pre-collect imported names to be sure those are already collected
+        # when needed
+        visitor.previsit_imports(self._tree)
 
         # Add parent
         for node in ast.walk(self._tree):
