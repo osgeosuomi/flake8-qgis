@@ -5,6 +5,7 @@
 * [#22](https://github.com/osgeosuomi/flake8-qgis/issues/22) Add QGIS 4 compatibility rules
 * [#27](https://github.com/osgeosuomi/flake8-qgis/pull/27) Add new rules QGS108 and QGS109 to replace "TEMPORARY_OUTPUT" with QgsProcessing.TEMPORARY_OUTPUT
 * [#28](https://github.com/osgeosuomi/flake8-qgis/issues/28) Add QGS110 rule to require is_child_algorithm=True for processing.run
+* Add QGS201/QGS202 to check return values from PyQgs methods
 
 ## Maintenance tasks
 
