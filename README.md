@@ -271,6 +271,9 @@ A method is determined to be **probably** a PyQgs method with the following logi
 
 Feel free to ignore this rule for lines that are not relevant.
 
+> [!WARNING]
+> This rule is considered experimental, feel free to ignore it. All feedback is much appreciated!
+
 #### Why is this bad?
 Some PyQgs methods return a success flag and or an error message.
 Ignoring the return value can hide errors and skip the message.
@@ -299,6 +302,9 @@ A method is determined to be **possibly** a PyQgs method with the following logi
 
 Since the corresponding class does not have to be imported in the same file, this rule might have lot of false positives.
 Feel free to ignore this rule for lines that are not relevant.
+
+> [!WARNING]
+> This rule is considered experimental, feel free to ignore it. All feedback is much appreciated!
 
 #### Why is this bad?
 Some PyQgs methods return a success flag and or an error message.

@@ -261,7 +261,8 @@ def test_QGS201_ignored_return(method_name, imports, expected_method):
         )
     )
     assert ret == {
-        "4:0 QGS201 Check the success flag and possibly error message from return "
+        "4:0 QGS201 (experimental) Check the success "
+        "flag and possibly error message from return "
         f"value of {expected_method}."
     }
 
@@ -300,7 +301,8 @@ def test_QGS202_ignored_return(method_name, expected_method):
         )
     )
     assert ret == {
-        "3:4 QGS202 Check the success flag and possibly error message from return "
+        "3:4 QGS202 (experimental) Check the success flag "
+        "and possibly error message from return "
         f"value of the method if it is {expected_method}. Otherwise "
         "ignore this error."
     }

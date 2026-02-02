@@ -38,11 +38,11 @@ QGS110 = (
 
 # Return value rules
 QGS201 = (
-    "QGS201 Check the success flag and possibly "
+    "QGS201 (experimental) Check the success flag and possibly "
     "error message from return value of {method}."
 )
 QGS202 = (
-    "QGS202 Check the success flag and possibly error message from "
+    "QGS202 (experimental) Check the success flag and possibly error message from "
     "return value of the method if it is {method}. Otherwise ignore this error."
 )
 
