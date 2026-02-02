@@ -369,26 +369,42 @@ def _get_qgs201_and_qgs202(
         and method_name in RETURN_VALUES_TO_CHECK
         and (_call_is_ignored(node) and not _call_used_as_condition(node))
     ):
+        has_uppercase_characters = any(c.isupper() for c in method_name)
+
         # Now it is important to check whether method is really part of PyQgs API or
         # if it just has a same name
         if class_names := RETURN_VALUES_TO_CHECK[method_name]:
             # For class methods, use QGS201 only if the class is imported.
-            rule = QGS201 if class_names & imported_names else QGS202
+            suitable_class_names = class_names & imported_names
 
-            if rule == QGS202 and len(class_names) > 1:
+            if not suitable_class_names and not has_uppercase_characters:
+                return []
+
+            if len(suitable_class_names) > 1:
                 method = "some of (" + ", ".join(
                     f"{class_name}.{method_name}()"
-                    for class_name in sorted(RETURN_VALUES_TO_CHECK[method_name])
+                    for class_name in sorted(suitable_class_names)
                 )
                 method += ")"
-            elif rule == QGS201:
-                method = f"{next(iter(class_names & imported_names))}.{method_name}()"
+                rule = QGS201
+            elif len(suitable_class_names) == 1:
+                method = f"{next(iter(suitable_class_names))}.{method_name}()"
+                rule = QGS201
+            elif len(class_names) > 1:
+                method = "some of (" + ", ".join(
+                    f"{class_name}.{method_name}()"
+                    for class_name in sorted(class_names)
+                )
+                method += ")"
+                rule = QGS202
             else:
                 method = f"{next(iter(class_names))}.{method_name}()"
+                rule = QGS202
         else:
-            # Method has a higher certainty for method to be a PyQgs
-            # method if it contains uppercase letters
-            rule = QGS201 if any(c.isupper() for c in method_name) else QGS202
+            if not has_uppercase_characters:
+                return []
+
+            rule = QGS202
             method = method_name
 
         return [(node.lineno, node.col_offset, rule.format(method=method))]

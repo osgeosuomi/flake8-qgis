@@ -267,9 +267,7 @@ Check return values from a probable PyQgs method call.
 
 A method is determined to be **probably** a PyQgs method with the following logic:
 * It appears on the [qgis_return_methods.json](flake8_qgis/qgis_return_methods.json) list
-* And either of following conditions is met:
-  * The corresponding class is imported in the same file
-  * The method has uppercase characters in its name
+* The corresponding class is imported in the same file
 
 Feel free to ignore this rule for lines that are not relevant.
 
@@ -297,10 +295,9 @@ Check return values from a possible PyQgs method call.
 
 A method is determined to be **possibly** a PyQgs method with the following logic:
 * It appears on the [qgis_return_methods.json](flake8_qgis/qgis_return_methods.json) list
-* And either of following conditions is met:
-    * The corresponding class is not imported in the same file
-    * The method has does not have uppercase characters in its name
+* The method has uppercase characters in its name
 
+Since the corresponding class does not have to be imported in the same file, this rule might have lot of false positives.
 Feel free to ignore this rule for lines that are not relevant.
 
 #### Why is this bad?

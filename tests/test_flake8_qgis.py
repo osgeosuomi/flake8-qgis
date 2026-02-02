@@ -284,12 +284,6 @@ def test_QGS201_return_not_ignored():
     ("method_name", "expected_method"),
     [
         (
-            "prepare",
-            "some of (QgsAbstractPropertyCollection.prepare(), "
-            "QgsDiagramLayerSettings.prepare(), QgsProperty.prepare())",
-        ),
-        ("calculate", "QgsAggregateCalculator.calculate()"),
-        (
             "addMapLayer",
             "some of (QgsMapLayerStore.addMapLayer(), QgsProject.addMapLayer())",
         ),
@@ -297,9 +291,16 @@ def test_QGS201_return_not_ignored():
 )
 def test_QGS202_ignored_return(method_name, expected_method):
     assert method_name in flake8_qgis_module.RETURN_VALUES_TO_CHECK
-    ret = _results(f"project.{method_name}(layer)")
+    ret = _results(
+        dedent(
+            f"""
+            def foo(layer):
+                project.instance().{method_name}('layer')
+            """
+        )
+    )
     assert ret == {
-        "1:0 QGS202 Check the success flag and possibly error message from return "
+        "3:4 QGS202 Check the success flag and possibly error message from return "
         f"value of the method if it is {expected_method}. Otherwise "
         "ignore this error."
     }
