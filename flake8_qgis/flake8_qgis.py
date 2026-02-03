@@ -430,8 +430,14 @@ def _get_qgs402(
         return []
 
     # If there is a NULL warning, let's not add another one here.
+    offset = len("QVariant(")
     for error in existing_errors:
-        if "QGS4" in error[2] and "NULL" in error[2]:
+        if (
+            error[0] == node.lineno
+            and error[1] in range(node.col_offset - offset, node.col_offset + offset)
+            and "QGS4" in error[2]
+            and "NULL" in error[2]
+        ):
             return []
 
     old_attr = node.attr
@@ -609,9 +615,15 @@ def _get_qgs108_and_qgs109(node: ast.Constant) -> list["FlakeError"]:
     return []
 
 
-def _remove_qgs402_qmetatype_errors(errors: list["FlakeError"]) -> None:
+def _remove_qgs402_qmetatype_errors(errors: list["FlakeError"], node: ast.Call) -> None:
+    offset = len("QVariant(")
     for error in errors[:]:
-        if "QGS4" in error[2] and "'QMetaType." in error[2]:
+        if (
+            error[0] == node.lineno
+            and error[1] in range(node.col_offset, node.col_offset + offset)
+            and "QGS4" in error[2]
+            and "'QMetaType." in error[2]
+        ):
             errors.remove(error)
 
 
@@ -734,7 +746,7 @@ class Visitor(ast.NodeVisitor):
             if qgs410_errors:
                 self.errors += qgs410_errors
                 # There might be QMetaType error as well, let's remove it.
-                _remove_qgs402_qmetatype_errors(self.errors)
+                _remove_qgs402_qmetatype_errors(self.errors, node)
 
             self.errors += _get_qgs411(node)
             self.errors += _get_qgs412(node)
