@@ -159,10 +159,125 @@ QMETATYPE_MAPPING = {
 }
 
 DEPRECATED_RENAMED_ENUMS = {
+    # Mouse Button Changes
+    ("Qt", "LeftButton"): ("MouseButton", "LeftButton"),
+    ("Qt", "RightButton"): ("MouseButton", "RightButton"),
     ("Qt", "MidButton"): ("MouseButton", "MiddleButton"),
+    ("Qt", "BackButton"): ("MouseButton", "BackButton"),
+    ("Qt", "ForwardButton"): ("MouseButton", "ForwardButton"),
+    ("Qt", "TaskButton"): ("MouseButton", "TaskButton"),
+    ("Qt", "ExtraButton24"): ("MouseButton", "ExtraButton24"),
+    # Keyboard Modifier Changes
+    ("Qt", "NoModifier"): ("KeyboardModifier", "NoModifier"),
+    ("Qt", "ShiftModifier"): ("KeyboardModifier", "ShiftModifier"),
+    ("Qt", "ControlModifier"): ("KeyboardModifier", "ControlModifier"),
+    ("Qt", "AltModifier"): ("KeyboardModifier", "AltModifier"),
+    ("Qt", "MetaModifier"): ("KeyboardModifier", "MetaModifier"),
+    # Orientation Changes
+    ("Qt", "Horizontal"): ("Orientation", "Horizontal"),
+    ("Qt", "Vertical"): ("Orientation", "Vertical"),
+    # Scroll Bar Policy
+    ("Qt", "ScrollBarAsNeeded"): ("ScrollBarPolicy", "ScrollBarAsNeeded"),
+    ("Qt", "ScrollBarAlwaysOff"): ("ScrollBarPolicy", "ScrollBarAlwaysOff"),
+    ("Qt", "ScrollBarAlwaysOn"): ("ScrollBarPolicy", "ScrollBarAlwaysOn"),
+    # Sort Order Changes
+    ("Qt", "AscendingOrder"): ("SortOrder", "AscendingOrder"),
+    ("Qt", "DescendingOrder"): ("SortOrder", "DescendingOrder"),
+    # Case Sensitivity Changes
+    ("Qt", "CaseSensitive"): ("CaseSensitivity", "CaseSensitive"),
+    ("Qt", "CaseInsensitive"): ("CaseSensitivity", "CaseInsensitive"),
+    # Focus Policy Changes
+    ("Qt", "NoFocus"): ("FocusPolicy", "NoFocus"),
+    ("Qt", "TabFocus"): ("FocusPolicy", "TabFocus"),
+    ("Qt", "ClickFocus"): ("FocusPolicy", "ClickFocus"),
+    ("Qt", "StrongFocus"): ("FocusPolicy", "StrongFocus"),
+    ("Qt", "WheelFocus"): ("FocusPolicy", "WheelFocus"),
+    # ItemDataRole Changes
+    ("Qt", "DisplayRole"): ("ItemDataRole", "DisplayRole"),
+    ("Qt", "DecorationRole"): ("ItemDataRole", "DecorationRole"),
+    ("Qt", "EditRole"): ("ItemDataRole", "EditRole"),
+    ("Qt", "ToolTipRole"): ("ItemDataRole", "ToolTipRole"),
+    ("Qt", "StatusTipRole"): ("ItemDataRole", "StatusTipRole"),
+    ("Qt", "WhatsThisRole"): ("ItemDataRole", "WhatsThisRole"),
     ("Qt", "TextColorRole"): ("ItemDataRole", "ForegroundRole"),
     ("Qt", "BackgroundColorRole"): ("ItemDataRole", "BackgroundRole"),
+    ("Qt", "FontRole"): ("ItemDataRole", "FontRole"),
+    ("Qt", "TextAlignmentRole"): ("ItemDataRole", "TextAlignmentRole"),
+    ("Qt", "CheckStateRole"): ("ItemDataRole", "CheckStateRole"),
+    # CheckState Changes
+    ("Qt", "Unchecked"): ("CheckState", "Unchecked"),
+    ("Qt", "PartiallyChecked"): ("CheckState", "PartiallyChecked"),
+    ("Qt", "Checked"): ("CheckState", "Checked"),
+    # Connection Type Changes
+    ("Qt", "AutoConnection"): ("ConnectionType", "AutoConnection"),
+    ("Qt", "DirectConnection"): ("ConnectionType", "DirectConnection"),
+    ("Qt", "QueuedConnection"): ("ConnectionType", "QueuedConnection"),
+    ("Qt", "BlockingQueuedConnection"): ("ConnectionType", "BlockingQueuedConnection"),
+    ("Qt", "UniqueConnection"): ("ConnectionType", "UniqueConnection"),
+    # TextFormat Changes
+    ("Qt", "PlainText"): ("TextFormat", "PlainText"),
+    ("Qt", "RichText"): ("TextFormat", "RichText"),
+    ("Qt", "AutoText"): ("TextFormat", "AutoText"),
+    # TextElideMode Changes
+    ("Qt", "ElideLeft"): ("TextElideMode", "ElideLeft"),
+    ("Qt", "ElideRight"): ("TextElideMode", "ElideRight"),
+    ("Qt", "ElideMiddle"): ("TextElideMode", "ElideMiddle"),
+    ("Qt", "ElideNone"): ("TextElideMode", "ElideNone"),
+    # AspectRatioMode Changes
+    ("Qt", "IgnoreAspectRatio"): ("AspectRatioMode", "IgnoreAspectRatio"),
+    ("Qt", "KeepAspectRatio"): ("AspectRatioMode", "KeepAspectRatio"),
+    ("Qt", "KeepAspectRatioByExpanding"): (
+        "AspectRatioMode",
+        "KeepAspectRatioByExpanding",
+    ),
+    # Dock Widget Area Changes
+    ("Qt", "RightDockWidgetArea"): ("DockWidgetArea", "RightDockWidgetArea"),
+    ("Qt", "LeftDockWidgetArea"): ("DockWidgetArea", "LeftDockWidgetArea"),
+    # QPainter Changes
     ("QPainter", "HighQualityAntialiasing"): ("RenderHint", "Antialiasing"),
+    # QAbstractItemView SelectionMode Changes
+    ("QAbstractItemView", "SingleSelection"): ("SelectionMode", "SingleSelection"),
+    ("QAbstractItemView", "MultiSelection"): ("SelectionMode", "MultiSelection"),
+    ("QAbstractItemView", "ExtendedSelection"): ("SelectionMode", "ExtendedSelection"),
+    ("QAbstractItemView", "ContiguousSelection"): (
+        "SelectionMode",
+        "ContiguousSelection",
+    ),
+    ("QAbstractItemView", "NoSelection"): ("SelectionMode", "NoSelection"),
+    # QAbstractItemView SelectionBehavior Changes
+    ("QAbstractItemView", "SelectItems"): ("SelectionBehavior", "SelectItems"),
+    ("QAbstractItemView", "SelectRows"): ("SelectionBehavior", "SelectRows"),
+    ("QAbstractItemView", "SelectColumns"): ("SelectionBehavior", "SelectColumns"),
+    # QDialogButtonBox ButtonRole Changes
+    ("QDialogButtonBox", "AcceptRole"): ("ButtonRole", "AcceptRole"),
+    ("QDialogButtonBox", "RejectRole"): ("ButtonRole", "RejectRole"),
+    ("QDialogButtonBox", "HelpRole"): ("ButtonRole", "HelpRole"),
+    ("QDialogButtonBox", "YesRole"): ("ButtonRole", "YesRole"),
+    ("QDialogButtonBox", "NoRole"): ("ButtonRole", "NoRole"),
+    ("QDialogButtonBox", "ApplyRole"): ("ButtonRole", "ApplyRole"),
+    ("QDialogButtonBox", "ResetRole"): ("ButtonRole", "ResetRole"),
+    # QMessageBox Icon Changes
+    ("QMessageBox", "NoIcon"): ("Icon", "NoIcon"),
+    ("QMessageBox", "Question"): ("Icon", "Question"),
+    ("QMessageBox", "Information"): ("Icon", "Information"),
+    ("QMessageBox", "Warning"): ("Icon", "Warning"),
+    ("QMessageBox", "Critical"): ("Icon", "Critical"),
+    # QComboBox InsertPolicy Changes
+    ("QComboBox", "NoInsert"): ("InsertPolicy", "NoInsert"),
+    ("QComboBox", "InsertAtTop"): ("InsertPolicy", "InsertAtTop"),
+    ("QComboBox", "InsertAtCurrent"): ("InsertPolicy", "InsertAtCurrent"),
+    ("QComboBox", "InsertAtBottom"): ("InsertPolicy", "InsertAtBottom"),
+    ("QComboBox", "InsertAfterCurrent"): ("InsertPolicy", "InsertAfterCurrent"),
+    ("QComboBox", "InsertBeforeCurrent"): ("InsertPolicy", "InsertBeforeCurrent"),
+    ("QComboBox", "InsertAlphabetically"): ("InsertPolicy", "InsertAlphabetically"),
+    # QSizePolicy Policy Changes
+    ("QSizePolicy", "Fixed"): ("Policy", "Fixed"),
+    ("QSizePolicy", "Minimum"): ("Policy", "Minimum"),
+    ("QSizePolicy", "Maximum"): ("Policy", "Maximum"),
+    ("QSizePolicy", "Preferred"): ("Policy", "Preferred"),
+    ("QSizePolicy", "MinimumExpanding"): ("Policy", "MinimumExpanding"),
+    ("QSizePolicy", "Expanding"): ("Policy", "Expanding"),
+    ("QSizePolicy", "Ignored"): ("Policy", "Ignored"),
 }
 
 QGIS_RETURN_METHODS_PATH = Path(__file__).with_name("qgis_return_methods.json")
