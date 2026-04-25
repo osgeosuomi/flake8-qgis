@@ -365,6 +365,16 @@ def test_QGS403():
         "instead of 'Qt.MouseButton.MidButton'."
     }
 
+    ret = _results("area = Qt.RightDockWidgetArea")
+    assert ret == {
+        "1:7 QGS403 Enum has been changed in Qt6. Use "
+        "'Qt.DockWidgetArea.RightDockWidgetArea' instead of "
+        "'Qt.RightDockWidgetArea'."
+    }
+
+    ret = _results("area = Qt.DockWidgetArea.RightDockWidgetArea")
+    assert ret == set()
+
 
 def test_QGS404():
     expected_error = {
