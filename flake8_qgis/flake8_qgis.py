@@ -595,10 +595,17 @@ def _get_qgs403(node: ast.Attribute) -> list["FlakeError"]:
         and isinstance(node.parent, ast.Attribute)
         and (node.value.id, node.parent.attr) in DEPRECATED_RENAMED_ENUMS
     ):
+        new_enum_name, new_member_name = DEPRECATED_RENAMED_ENUMS[
+            (node.value.id, node.parent.attr)
+        ]
+        if node.attr == new_enum_name and node.parent.attr == new_member_name:
+            return []
+
         new = ".".join(
             [
                 node.value.id,
-                *DEPRECATED_RENAMED_ENUMS[(node.value.id, node.parent.attr)],
+                new_enum_name,
+                new_member_name,
             ]
         )
         old = ".".join([node.value.id, node.attr, node.parent.attr])
