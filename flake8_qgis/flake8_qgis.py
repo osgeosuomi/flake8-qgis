@@ -35,6 +35,7 @@ QGS109 = "QGS109 Replace '{old}' with QgsProcessing.TEMPORARY_OUTPUT"
 QGS110 = (
     "QGS110 Use is_child_algorithm=True when running other algorithms in the plugin"
 )
+QGS111 = "QGS111 Use 'from qgis import processing' instead of 'import processing'"
 
 # Return value rules
 QGS201 = (
@@ -474,6 +475,14 @@ def _get_qgs110(node: Call) -> list["FlakeError"]:
     return []
 
 
+def _get_qgs111(node: ast.Import) -> list["FlakeError"]:
+    errors: list[FlakeError] = []
+    for alias in node.names:
+        if alias.name == "processing":
+            errors.append((node.lineno, node.col_offset, QGS111))
+    return errors
+
+
 def _get_qgs201_and_qgs202(
     node: ast.Call, imported_names: set[str]
 ) -> list["FlakeError"]:
@@ -838,6 +847,7 @@ class Visitor(ast.NodeVisitor):
         self.errors += _get_qgs106(node)
         self.errors += _get_qgs406_import(node)
         self.errors += _get_qgs408_import(node)
+        self.errors += _get_qgs111(node)
 
     def visit_FunctionDef(self, node: FunctionDef) -> None:
         self.errors += _get_qgs105(node)

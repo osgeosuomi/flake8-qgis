@@ -262,6 +262,22 @@ processing.run("native:buffer", {"INPUT": layer})
 processing.run("native:buffer", {"INPUT": layer}, is_child_algorithm=True)
 ```
 
+### QGS111
+Avoid importing processing directly, import it from qgis package
+
+#### Why is this bad?
+Although it works sometimes, it is not the recommended way to use the processing module.
+
+#### Example
+
+```python
+# Bad
+import processing
+
+# Good
+from qgis import processing
+```
+
 ### QGS201
 Check return values from a probable PyQgs method call.
 
