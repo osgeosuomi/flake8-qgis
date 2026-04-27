@@ -234,6 +234,16 @@ def test_QGS110():
     }
 
 
+def test_QGS111():
+    ret = _results("from qgis import processing")
+    assert ret == set()
+
+    ret = _results("import processing")
+    assert ret == {
+        "1:0 QGS111 Use 'from qgis import processing' instead of 'import processing'"
+    }
+
+
 @pytest.mark.parametrize(
     ("method_name", "imports", "expected_method"),
     [
