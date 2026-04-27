@@ -39,6 +39,7 @@ Rule | Description
 [QGS108](#QGS108) | Use QgsProcessing.TEMPORARY_OUTPUT instead of "TEMPORARY_OUTPUT"
 [QGS109](#QGS109) | Use QgsProcessing.TEMPORARY_OUTPUT instead of misspelled "TEMPORARY_OUTPUT"
 [QGS110](#QGS110) | Use is_child_algorithm=True when running other algorithms in the plugin
+[QGS111](#QGS111) | Avoid importing processing directly, import it from qgis package
 [QGS201](#QGS201) | Check return values from a probable PyQgs method call
 [QGS202](#QGS202) | Check return values from a possible PyQgs method call
 [QGS401](#QGS401) | Use 'QApplication.instance()' instead of 'qApp'
