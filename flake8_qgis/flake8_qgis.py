@@ -746,6 +746,48 @@ def _get_qgs108_and_qgs109(node: ast.Constant) -> list["FlakeError"]:
     return []
 
 
+def _is_processing_parameter_position(node: ast.Constant) -> bool:
+    """Return True only when ``node`` is in a position where suggesting
+    ``QgsProcessing.TEMPORARY_OUTPUT`` makes sense.
+
+    QGS108/109 are advice about the QGIS *processing* API. The string
+    ``"TEMPORARY_OUTPUT"`` only carries that meaning when it appears as
+    a parameter passed to (or staged to be passed to) ``processing.run``
+    — typically as a value in a parameter dict or as a positional /
+    keyword arg of a ``Call``. Flagging the same string when it shows
+    up in unrelated contexts (e.g. the constant declaration
+    ``TEMPORARY_OUTPUT = "TEMPORARY_OUTPUT"``, a docstring, a regex,
+    an unrelated assignment) is a false positive and hides real
+    occurrences (issue #36).
+
+    Without flow analysis we can't detect every case, but two AST
+    shapes cover the overwhelming majority of real usage:
+
+      1. ``processing.run("alg", "TEMPORARY_OUTPUT", ...)``
+         — string is a direct ``args`` / ``keywords`` value of a Call.
+      2. ``{"OUTPUT": "TEMPORARY_OUTPUT"}`` (dict literal anywhere,
+         typically the parameter dict passed to ``processing.run``,
+         either inline or assigned to a local first).
+
+    Anything else (top-level assignment, function default, list /
+    tuple literals, return values, f-string fragments, …) is treated
+    as a non-processing context and skipped.
+    """
+    parent = getattr(node, "parent", None)
+    if isinstance(parent, ast.Call):
+        # Direct positional arg, or keyword whose value is the literal.
+        return any(arg is node for arg in parent.args) or any(
+            kw.value is node for kw in parent.keywords
+        )
+    if isinstance(parent, ast.keyword):
+        # `processing.run(..., output="TEMPORARY_OUTPUT")` style.
+        return True
+    if isinstance(parent, ast.Dict):
+        # Value in any dict literal — assume it's a parameter dict.
+        return any(v is node for v in parent.values)
+    return False
+
+
 def _remove_qgs402_qmetatype_errors(errors: list["FlakeError"], node: ast.Call) -> None:
     offset = len("QVariant(")
     for error in errors[:]:
@@ -890,7 +932,10 @@ class Visitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Constant(self, node: ast.Constant) -> None:
-        self.errors += _get_qgs108_and_qgs109(node)
+        # QGS108/109 only make sense in processing-parameter contexts
+        # (issue #36). Skip the bare-Constant flag everywhere else.
+        if _is_processing_parameter_position(node):
+            self.errors += _get_qgs108_and_qgs109(node)
         self.generic_visit(node)
 
 

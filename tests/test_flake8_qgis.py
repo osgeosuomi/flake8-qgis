@@ -186,11 +186,21 @@ def test_QGS107():
 
 
 def test_QGS108_and_QGS109():
-    ret = _results('output = "TEMPORARY_OUTPUT"')
-    assert ret == {
-        "1:9 QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
-    }
+    # Issue #36: only flag the literal in processing-parameter contexts —
+    # i.e. when it is a Call argument or a Dict value. Plain assignments
+    # and unrelated string usage should not trigger the rule.
 
+    # Plain assignment is no longer flagged (the constant might be a
+    # module-level definition, an unrelated string, etc.).
+    ret = _results('output = "TEMPORARY_OUTPUT"')
+    assert ret == set()
+
+    # Module-level constant declaration of the same name was the
+    # canonical false-positive case from the issue's screenshot.
+    ret = _results('TEMPORARY_OUTPUT = "TEMPORARY_OUTPUT"')
+    assert ret == set()
+
+    # Positional arg of a Call (the existing motivating case).
     ret = _results(
         dedent(
             """
@@ -198,21 +208,62 @@ def test_QGS108_and_QGS109():
         """
         )
     )
-
     assert ret == {
         "2:29 QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
     }
 
+    # Value inside a parameter dict (typical processing.run usage).
+    # is_child_algorithm=True keeps QGS110 quiet so we only assert on QGS108.
+    ret = _results(
+        'processing.run("alg", {"OUTPUT": "TEMPORARY_OUTPUT"}, is_child_algorithm=True)'
+    )
+    qgs108_in_dict = {m for m in ret if "QGS108" in m}
+    assert qgs108_in_dict == {
+        "1:33 QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
+    }
+
+    # Parameter dict assigned to a local first, then passed in. The dict
+    # value is still flagged because it sits in a Dict literal regardless
+    # of where the dict is later consumed.
+    ret = _results(
+        dedent(
+            """
+        params = {"OUTPUT": "TEMPORARY_OUTPUT"}
+        processing.run("alg", params, is_child_algorithm=True)
+        """
+        )
+    )
+    qgs108_in_dict_local = {m for m in ret if "QGS108" in m}
+    assert qgs108_in_dict_local == {
+        "2:20 QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
+    }
+
+    # Keyword argument: still flagged.
+    ret = _results(
+        'processing.run("alg", output="TEMPORARY_OUTPUT", is_child_algorithm=True)'
+    )
+    qgs108_kw = {m for m in ret if "QGS108" in m}
+    assert qgs108_kw == {
+        "1:29 QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
+    }
+
+    # Misspellings (QGS109) only fire in processing-parameter context too.
     ret = _results('output = "TEMPORARY_OUTPT"')
-    assert ret == {
-        "1:9 QGS109 Replace 'TEMPORARY_OUTPT' with QgsProcessing.TEMPORARY_OUTPUT"
+    assert ret == set()
+    ret = _results('processing.run("alg", "TEMPORARY_OUTPT", is_child_algorithm=True)')
+    qgs109_call = {m for m in ret if "QGS109" in m}
+    assert qgs109_call == {
+        "1:22 QGS109 Replace 'TEMPORARY_OUTPT' with QgsProcessing.TEMPORARY_OUTPUT"
+    }
+    ret = _results(
+        'processing.run("alg", "TEMPORARY_OUTPUTS", is_child_algorithm=True)'
+    )
+    qgs109_call2 = {m for m in ret if "QGS109" in m}
+    assert qgs109_call2 == {
+        "1:22 QGS109 Replace 'TEMPORARY_OUTPUTS' with QgsProcessing.TEMPORARY_OUTPUT"
     }
 
-    ret = _results('output = "TEMPORARY_OUTPUTS"')
-    assert ret == {
-        "1:9 QGS109 Replace 'TEMPORARY_OUTPUTS' with QgsProcessing.TEMPORARY_OUTPUT"
-    }
-
+    # Unrelated string is still not flagged.
     ret = _results('output = "something else"')
     assert ret == set()
 
