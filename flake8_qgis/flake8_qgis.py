@@ -451,6 +451,33 @@ def _get_qgs107_attribute(node: ast.Attribute) -> list["FlakeError"]:
     return []
 
 
+def _get_qualified_name(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        value_name = _get_qualified_name(node.value)
+        if value_name is not None:
+            return f"{value_name}.{node.attr}"
+    return None
+
+
+def _is_qgs_processing_algorithm_class(node: ast.ClassDef) -> bool:
+    return any(
+        _get_qualified_name(base)
+        in {"QgsProcessingAlgorithm", "qgis.core.QgsProcessingAlgorithm"}
+        for base in node.bases
+    )
+
+
+def _is_inside_qgs_processing_algorithm_class(node: ast.AST) -> bool:
+    parent = getattr(node, "parent", None)
+    while parent is not None:
+        if isinstance(parent, ast.ClassDef):
+            return _is_qgs_processing_algorithm_class(parent)
+        parent = getattr(parent, "parent", None)
+    return False
+
+
 def _get_qgs110(node: Call) -> list["FlakeError"]:
     assert isinstance(node.func, ast.Attribute)
     if not (
@@ -458,6 +485,9 @@ def _get_qgs110(node: Call) -> list["FlakeError"]:
         and node.func.value.id == "processing"
         and node.func.attr == "run"
     ):
+        return []
+
+    if not _is_inside_qgs_processing_algorithm_class(node):
         return []
 
     is_child_keyword = None

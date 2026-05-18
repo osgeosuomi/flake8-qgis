@@ -222,16 +222,60 @@ def test_QGS110():
     assert ret == set()
 
     ret = _results("processing.run('native:buffer', {})")
+    assert ret == set()
+
+    ret = _results(
+        dedent(
+            """
+            def helper():
+                processing.run('native:buffer', {})
+            """
+        )
+    )
+    assert ret == set()
+
+    ret = _results(
+        dedent(
+            """
+            class MyAlgorithm(QgsProcessingAlgorithm):
+                def processAlgorithm(self):
+                    processing.run('native:buffer', {})
+            """
+        )
+    )
     assert ret == {
-        "1:0 QGS110 Use is_child_algorithm=True when running other algorithms in the "
+        "4:8 QGS110 Use is_child_algorithm=True when running other algorithms in the "
         "plugin"
     }
 
-    ret = _results("processing.run('native:buffer', {}, is_child_algorithm=False)")
+    ret = _results(
+        dedent(
+            """
+            class MyAlgorithm(qgis.core.QgsProcessingAlgorithm):
+                def processAlgorithm(self):
+                    processing.run('native:buffer', {}, is_child_algorithm=False)
+            """
+        )
+    )
     assert ret == {
-        "1:0 QGS110 Use is_child_algorithm=True when running other algorithms in the "
+        "4:8 QGS110 Use is_child_algorithm=True when running other algorithms in the "
         "plugin"
     }
+
+    ret = _results(
+        dedent(
+            """
+            class MyAlgorithm(QgsProcessingAlgorithm):
+                def processAlgorithm(self):
+                    processing.run(
+                        'native:buffer',
+                        {},
+                        is_child_algorithm=True,
+                    )
+            """
+        )
+    )
+    assert ret == set()
 
 
 def test_QGS111():
