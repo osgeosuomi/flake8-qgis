@@ -252,6 +252,20 @@ def test_QGS110():
         dedent(
             """
             class MyAlgorithm(qgis.core.QgsProcessingAlgorithm):
+                def _other_method(self):
+                    processing.run()
+            """
+        )
+    )
+    assert ret == {
+        "4:8 QGS110 Use is_child_algorithm=True when running other algorithms in the "
+        "plugin"
+    }
+
+    ret = _results(
+        dedent(
+            """
+            class MyAlgorithm(qgis.core.QgsProcessingAlgorithm):
                 def processAlgorithm(self):
                     processing.run('native:buffer', {}, is_child_algorithm=False)
             """
