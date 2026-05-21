@@ -186,11 +186,6 @@ def test_QGS107():
 
 
 def test_QGS108_and_QGS109():
-    ret = _results('output = "TEMPORARY_OUTPUT"')
-    assert ret == {
-        "1:9 QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
-    }
-
     ret = _results(
         dedent(
             """
@@ -203,18 +198,64 @@ def test_QGS108_and_QGS109():
         "2:29 QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
     }
 
-    ret = _results('output = "TEMPORARY_OUTPT"')
+    ret = _results(
+        dedent(
+            """
+            processing.run(
+                "native:buffer",
+                {"INPUT": layer, "OUTPUT": "TEMPORARY_OUTPUT"},
+                is_child_algorithm=True,
+            )
+            """
+        )
+    )
     assert ret == {
-        "1:9 QGS109 Replace 'TEMPORARY_OUTPT' with QgsProcessing.TEMPORARY_OUTPUT"
+        "4:31 QGS108 Replace 'TEMPORARY_OUTPUT' with QgsProcessing.TEMPORARY_OUTPUT"
     }
 
-    ret = _results('output = "TEMPORARY_OUTPUTS"')
+    ret = _results(
+        dedent(
+            """
+            processing.run(
+                "native:buffer",
+                {"INPUT": layer, "OUTPUT": "TEMPORARY_OUTPT"},
+                is_child_algorithm=True,
+            )
+            """
+        )
+    )
     assert ret == {
-        "1:9 QGS109 Replace 'TEMPORARY_OUTPUTS' with QgsProcessing.TEMPORARY_OUTPUT"
+        "4:31 QGS109 Replace 'TEMPORARY_OUTPT' with QgsProcessing.TEMPORARY_OUTPUT"
     }
 
-    ret = _results('output = "something else"')
-    assert ret == set()
+    ret = _results(
+        dedent(
+            """
+            processing.run(
+                "native:buffer",
+                {"INPUT": layer, "OUTPUT": "TEMPORARY_OUTPUTS"},
+                is_child_algorithm=True,
+            )
+            """
+        )
+    )
+    assert ret == {
+        "4:31 QGS109 Replace 'TEMPORARY_OUTPUTS' with QgsProcessing.TEMPORARY_OUTPUT"
+    }
+
+    # Outside processing.run, the string should not trigger any error.
+    assert _results('output = "TEMPORARY_OUTPUT"') == set()
+    assert _results('output = "TEMPORARY_OUTPUTS"') == set()
+    assert (
+        _results(
+            dedent(
+                """
+                some_other.run("native:buffer", {"OUTPUT": "TEMPORARY_OUTPUT"})
+                """
+            )
+        )
+        == set()
+    )
 
 
 def test_QGS110():
