@@ -240,7 +240,7 @@ wheels = [
 
 [[package]]
 name = "flake8-qgis"
-version = "2.1.0"
+version = "2.1.0.post1"
 source = { editable = "." }
 dependencies = [
     { name = "flake8" },
