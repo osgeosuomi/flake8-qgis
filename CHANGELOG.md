@@ -1,5 +1,28 @@
 # Undeleased
 
+## New Features
+
+* [#33](https://github.com/osgeosuomi/flake8-qgis/pull/33) Add QGS111 rule to
+  require importing `processing` from `qgis` instead of as a top-level module.
+* [#31](https://github.com/osgeosuomi/flake8-qgis/pull/31) Extend QGS403 with
+  additional deprecated/renamed Qt enums.
+
+## Fixes
+
+* [#42](https://github.com/osgeosuomi/flake8-qgis/pull/42) Scope QGS108 and QGS109 to strings inside `processing.run(...)` calls to avoid
+  false positives in unrelated code.
+* [#40](https://github.com/osgeosuomi/flake8-qgis/pull/40),
+  [#41](https://github.com/osgeosuomi/flake8-qgis/pull/41) Scope QGS110 to
+  methods of classes that inherit from `QgsProcessingAlgorithm` to avoid false
+  positives in unrelated code.
+* [#31](https://github.com/osgeosuomi/flake8-qgis/pull/31) Fix QGS403 to not
+  flag enums that already use the correct Qt6 form.
+
+## Maintenance tasks
+
+* [#39](https://github.com/osgeosuomi/flake8-qgis/pull/39) Add a pull request
+  template and links to contributor guidelines.
+
 
 # Version 2.0.1 (18-03-2026)
 
