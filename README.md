@@ -35,8 +35,8 @@ Just call `flake8 .` in your package or `flake your.py`.
  [QGS105](#QGS105) | Avoid passing QgisInterface as an argument
  [QGS106](#QGS106) | Avoid importing gdal directly, import it from osgeo package
  [QGS107](#QGS107) | Use 'exec' instead of 'exec_'
- [QGS108](#QGS108) | Use QgsProcessing.TEMPORARY_OUTPUT instead of "TEMPORARY_OUTPUT"
- [QGS109](#QGS109) | Use QgsProcessing.TEMPORARY_OUTPUT instead of misspelled "TEMPORARY_OUTPUT"
+ [QGS108](#QGS108) | Use QgsProcessing.TEMPORARY_OUTPUT instead of "TEMPORARY_OUTPUT" in `processing.run`
+ [QGS109](#QGS109) | Use QgsProcessing.TEMPORARY_OUTPUT instead of misspelled "TEMPORARY_OUTPUT" in `processing.run`
  [QGS110](#QGS110) | Use is_child_algorithm=True when running other algorithms in the plugin
  [QGS111](#QGS111) | Avoid importing processing directly, import it from qgis package
  [QGS201](#QGS201) | Check return values from a probable PyQgs method call
@@ -233,6 +233,8 @@ window.exec()
 
 Use QgsProcessing.TEMPORARY_OUTPUT instead of "TEMPORARY_OUTPUT"
 
+This rule is only active when the string appears inside a `processing.run(...)` call.
+
 #### Why is this bad?
 
 It is a good practice to use the constant that PyQGIS API provides.
@@ -241,18 +243,24 @@ It is a good practice to use the constant that PyQGIS API provides.
 
 ```python
 # Bad
-output = "TEMPORARY_OUTPUT"
+processing.run("native:buffer", {"INPUT": layer, "OUTPUT": "TEMPORARY_OUTPUT"})
 
 # Good
 from qgis.core import QgsProcessing
 
-output = QgsProcessing.TEMPORARY_OUTPUT
+processing.run(
+    "native:buffer",
+    {"INPUT": layer, "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT},
+)
 ```
 
 ### QGS109
 
 Use QgsProcessing.TEMPORARY_OUTPUT instead of misspelled "TEMPORARY_OUTPUT"
 
+This rule is only active when the misspelled string appears inside a
+`processing.run(...)` call.
+
 #### Why is this bad?
 
 It is a good practice to use the constant that PyQGIS API provides.
@@ -261,12 +269,15 @@ It is a good practice to use the constant that PyQGIS API provides.
 
 ```python
 # Bad
-output = "TEMPRARY_OUTPUT"
+processing.run("native:buffer", {"INPUT": layer, "OUTPUT": "TEMPRARY_OUTPUT"})
 
 # Good
 from qgis.core import QgsProcessing
 
-output = QgsProcessing.TEMPORARY_OUTPUT
+processing.run(
+    "native:buffer",
+    {"INPUT": layer, "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT},
+)
 ```
 
 ### QGS110

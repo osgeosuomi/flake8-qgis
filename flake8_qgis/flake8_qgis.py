@@ -478,6 +478,29 @@ def _is_inside_qgs_processing_algorithm_class(node: ast.AST) -> bool:
     return False
 
 
+def _is_processing_run_call(node: ast.AST) -> bool:
+    return (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "processing"
+        and node.func.attr == "run"
+    )
+
+
+def _is_inside_processing_run_call(node: ast.AST) -> bool:
+    parent = getattr(node, "parent", None)
+    while parent is not None:
+        if _is_processing_run_call(parent):
+            return True
+        if isinstance(
+            parent, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Module)
+        ):
+            return False
+        parent = getattr(parent, "parent", None)
+    return False
+
+
 def _get_qgs110(node: Call) -> list["FlakeError"]:
     assert isinstance(node.func, ast.Attribute)
     if not (
@@ -763,16 +786,21 @@ def _get_qgs412(node: Call) -> list["FlakeError"]:
 
 
 def _get_qgs108_and_qgs109(node: ast.Constant) -> list["FlakeError"]:
-    if isinstance(node.value, str):
-        if node.value == TEMPORARY_OUTPUT:
-            return [(node.lineno, node.col_offset, QGS108)]
+    if not isinstance(node.value, str):
+        return []
 
-        if (
-            node.value.startswith("TEMP")
-            and "_" in node.value
-            and _is_within_one_edit(node.value, TEMPORARY_OUTPUT)
-        ):
-            return [(node.lineno, node.col_offset, QGS109.format(old=node.value))]
+    if not _is_inside_processing_run_call(node):
+        return []
+
+    if node.value == TEMPORARY_OUTPUT:
+        return [(node.lineno, node.col_offset, QGS108)]
+
+    if (
+        node.value.startswith("TEMP")
+        and "_" in node.value
+        and _is_within_one_edit(node.value, TEMPORARY_OUTPUT)
+    ):
+        return [(node.lineno, node.col_offset, QGS109.format(old=node.value))]
     return []
 
 
